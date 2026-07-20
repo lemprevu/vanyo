@@ -1,0 +1,12 @@
+<svg width="200" height="64" viewBox="0 0 200 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <linearGradient id="g" x1="10" y1="24" x2="27" y2="44" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#7B5CFF"/>
+    <stop offset="1" stop-color="#5B32E6"/>
+  </linearGradient>
+  <g transform="translate(4 8)">
+    <rect x="21" y="6" width="17" height="17" rx="2.5" transform="rotate(45 29.5 14.5)" fill="#6D4AFF" fill-opacity="0.22"/>
+    <rect x="15" y="12.5" width="17" height="17" rx="2.5" transform="rotate(45 23.5 21)" fill="#6D4AFF" fill-opacity="0.5"/>
+    <rect x="10" y="21" width="17" height="17" rx="2.5" transform="rotate(45 18.5 29.5)" fill="url(#g)"/>
+  </g>
+  <text x="60" y="41" font-family="Geist, Arial, sans-serif" font-size="30" font-weight="600" letter-spacing="-1" fill="#0B0B0F">vanyo</text>
+</svg>
