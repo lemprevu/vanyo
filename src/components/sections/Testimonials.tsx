@@ -23,7 +23,7 @@ export function Testimonials({ testimonials = TESTIMONIALS }: { testimonials?: T
 
   return (
     <section
-      className="container-v py-20"
+      className="container-v py-14 sm:py-20"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >

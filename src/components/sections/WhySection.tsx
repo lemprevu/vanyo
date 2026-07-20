@@ -7,7 +7,7 @@ export function WhySection({ limit }: { limit?: number }) {
   const items = limit ? ADVANTAGES.slice(0, limit) : ADVANTAGES;
 
   return (
-    <section className="container-v py-20">
+    <section className="container-v py-14 sm:py-20">
       <SectionHeading
         eyebrow="Pourquoi Vanyo"
         title={<>Des sites conçus pour <span className="text-gradient-violet">vous faire gagner</span></>}

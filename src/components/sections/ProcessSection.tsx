@@ -7,7 +7,7 @@ import { Icon } from "@/components/ui/Icon";
 
 export function ProcessSection() {
   return (
-    <section className="container-v py-20">
+    <section className="container-v py-14 sm:py-20">
       <SectionHeading
         eyebrow="Notre processus"
         title={<>De l'idée à la <span className="text-gradient-violet">mise en ligne</span></>}

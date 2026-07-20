@@ -38,6 +38,42 @@ export const BUDGETS = [
   "5000€ +",
 ] as const;
 
+/** Objectif principal du site. */
+export const OBJECTIFS = [
+  "Obtenir des contacts / demandes",
+  "Vendre en ligne",
+  "Présenter mon activité",
+  "Prendre des rendez-vous",
+  "Me faire connaître (notoriété)",
+  "Autre",
+] as const;
+
+/** Style visuel recherché. */
+export const STYLES_VISUELS = [
+  "Moderne & épuré",
+  "Luxe & premium",
+  "Coloré & créatif",
+  "Corporate & sérieux",
+  "Chaleureux & convivial",
+  "Minimaliste",
+] as const;
+
+/** D'où vient le contenu (textes/images). */
+export const CONTENU_TYPES = [
+  "Je fournis tout (textes + images)",
+  "J'ai une partie du contenu",
+  "Je veux que vous rédigiez tout",
+] as const;
+
+/** Options payantes supplémentaires proposées à l'étape dédiée. */
+export const OPTIONS_SUP = [
+  { key: "Page supplémentaire", price: "À partir de 50 €", counter: true },
+  { key: "Livraison prioritaire (72 h)", price: "+100 €" },
+  { key: "Maintenance mensuelle", price: "À partir de 19 €/mois" },
+  { key: "Création de logo", price: "Sur devis" },
+  { key: "Rédaction de contenu", price: "Sur devis" },
+] as const;
+
 export const TRISTATE = ["Oui", "Non", "Je veux que vous vous en occupiez"] as const;
 export const LOGO_STATE = ["Oui", "Non", "À créer"] as const;
 
@@ -94,4 +130,18 @@ export type Devis = {
   note_interne?: string | null;
   rgpd: boolean;
   viewed?: boolean;
+  // Questionnaire "Style & contenu"
+  objectif?: string | null;
+  style_visuel?: string | null;
+  ambiance?: string | null;
+  couleurs_souhaitees?: string | null;
+  inspirations?: string | null;
+  concurrents?: string | null;
+  public_cible?: string | null;
+  contenu_type?: string | null;
+  langues?: string | null;
+  a_des_photos?: string | null;
+  // Options payantes supplémentaires
+  options?: string[] | null;
+  pages_supplementaires?: number | null;
 };

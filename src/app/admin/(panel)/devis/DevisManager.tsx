@@ -232,6 +232,48 @@ export function DevisManager({ initial, live }: { initial: Devis[]; live: boolea
                   </Section>
                 )}
 
+                {(selected.objectif || selected.style_visuel || selected.couleurs_souhaitees ||
+                  selected.ambiance || selected.inspirations || selected.concurrents ||
+                  selected.public_cible || selected.contenu_type || selected.langues || selected.a_des_photos) && (
+                  <Section title="Style & contenu">
+                    <Field label="Objectif" value={selected.objectif} />
+                    <Field label="Style visuel" value={selected.style_visuel} />
+                    <Field label="Couleurs" value={selected.couleurs_souhaitees} />
+                    <Field label="Ambiance" value={selected.ambiance} />
+                    <Field label="Clientèle cible" value={selected.public_cible} />
+                    <Field label="Contenu" value={selected.contenu_type} />
+                    <Field label="Photos" value={selected.a_des_photos} />
+                    <Field label="Langues" value={selected.langues} />
+                    {selected.inspirations && (
+                      <div className="pt-1">
+                        <span className="text-xs text-white/45">Inspirations</span>
+                        <p className="whitespace-pre-wrap text-sm text-white/80">{selected.inspirations}</p>
+                      </div>
+                    )}
+                    {selected.concurrents && (
+                      <div className="pt-1">
+                        <span className="text-xs text-white/45">Concurrents</span>
+                        <p className="whitespace-pre-wrap text-sm text-white/80">{selected.concurrents}</p>
+                      </div>
+                    )}
+                  </Section>
+                )}
+
+                {((selected.options && selected.options.length > 0) || (selected.pages_supplementaires ?? 0) > 0) && (
+                  <Section title="Options supplémentaires">
+                    <div className="flex flex-wrap gap-1.5">
+                      {(selected.pages_supplementaires ?? 0) > 0 && (
+                        <span className="rounded-md bg-emerald-500/15 px-2 py-1 text-xs text-emerald-300">
+                          {selected.pages_supplementaires} page(s) supplémentaire(s)
+                        </span>
+                      )}
+                      {(selected.options ?? []).map((o) => (
+                        <span key={o} className="rounded-md bg-emerald-500/15 px-2 py-1 text-xs text-emerald-300">{o}</span>
+                      ))}
+                    </div>
+                  </Section>
+                )}
+
                 {selected.description && (
                   <Section title="Description">
                     <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/70">{selected.description}</p>

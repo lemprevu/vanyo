@@ -10,7 +10,7 @@ export function FaqSection({ heading = true }: { heading?: boolean }) {
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <section className="container-v py-20">
+    <section className="container-v py-14 sm:py-20">
       {heading && (
         <SectionHeading
           eyebrow="FAQ"

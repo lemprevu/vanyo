@@ -6,7 +6,7 @@ import { StaggerGroup, StaggerItem } from "@/components/ui/Reveal";
 
 export function PricingSection({ heading = true, plans = PLANS }: { heading?: boolean; plans?: Plan[] }) {
   return (
-    <section className="container-v py-20">
+    <section className="container-v py-14 sm:py-20">
       {heading && (
         <SectionHeading
           eyebrow="Tarifs"

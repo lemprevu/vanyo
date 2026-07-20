@@ -66,6 +66,22 @@ export async function POST(request: Request) {
     charte_graphique: str(body.charte_graphique, 40),
     fonctionnalites: strArray(body.fonctionnalites),
     budget: str(body.budget, 40),
+    // Style & contenu
+    objectif: str(body.objectif, 80),
+    style_visuel: str(body.style_visuel, 80),
+    ambiance: str(body.ambiance, 300),
+    couleurs_souhaitees: str(body.couleurs_souhaitees, 300),
+    inspirations: str(body.inspirations, 1000),
+    concurrents: str(body.concurrents, 1000),
+    public_cible: str(body.public_cible, 300),
+    contenu_type: str(body.contenu_type, 80),
+    langues: str(body.langues, 120),
+    a_des_photos: str(body.a_des_photos, 60),
+    // Options payantes
+    options: strArray(body.options),
+    pages_supplementaires: Number.isFinite(Number(body.pages_supplementaires))
+      ? Math.max(0, Math.min(200, Math.floor(Number(body.pages_supplementaires))))
+      : 0,
     date_souhaitee: str(body.date_souhaitee, 40) || null,
     description: body.description ? clean(str(body.description, 5000)!) : null,
     rgpd: true,
@@ -101,8 +117,12 @@ export async function POST(request: Request) {
         ["Email", record.email],
         ["Téléphone", record.telephone ?? ""],
         ["Type de site", record.type_site ?? ""],
+        ["Objectif", record.objectif ?? ""],
         ["Budget", record.budget ?? ""],
+        ["Style visuel", record.style_visuel ?? ""],
+        ["Couleurs", record.couleurs_souhaitees ?? ""],
         ["Fonctionnalités", (record.fonctionnalites ?? []).join(", ")],
+        ["Options", [...(record.options ?? []), record.pages_supplementaires ? `${record.pages_supplementaires} page(s) sup.` : ""].filter(Boolean).join(", ")],
       ],
       record.description ?? ""
     )

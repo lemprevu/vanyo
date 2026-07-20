@@ -31,7 +31,7 @@ export default async function HomePage() {
       {on("process") && <ProcessSection />}
 
       {on("realisations") && (
-        <section className="container-v py-20">
+        <section className="container-v py-14 sm:py-20">
           <SectionHeading
             eyebrow="Réalisations"
             title={<>Nos derniers <span className="text-gradient-violet">projets</span></>}

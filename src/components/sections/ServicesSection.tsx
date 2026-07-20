@@ -9,7 +9,7 @@ export function ServicesSection({ limit }: { limit?: number }) {
   const items = limit ? SERVICES.slice(0, limit) : SERVICES;
 
   return (
-    <section id="services" className="container-v py-20">
+    <section id="services" className="container-v py-14 sm:py-20">
       <SectionHeading
         eyebrow="Nos services"
         title={<>Tout ce qu'il faut pour <span className="text-gradient-violet">réussir en ligne</span></>}
