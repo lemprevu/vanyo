@@ -93,4 +93,5 @@ export type Devis = {
   description?: string | null;
   note_interne?: string | null;
   rgpd: boolean;
+  viewed?: boolean;
 };

@@ -17,6 +17,7 @@ export default async function PanelLayout({
     return (
       <AdminShell
         email="demo@vanyo.fr"
+        live={false}
         counts={{ devis: 3, messages: 2 }}
         notifications={[
           { id: "1", type: "devis", text: "Nouvelle demande de devis — Maison Laurent", time: "Il y a 12 min" },
@@ -40,13 +41,25 @@ export default async function PanelLayout({
     supabase.from("messages").select("*", { count: "exact", head: true }).eq("lu", false),
   ]);
 
-  const { data: recent } = await supabase
+  // Notifications = devis pas encore consultés. Si la colonne `viewed`
+  // n'existe pas encore (migration supabase/notifications.sql non exécutée),
+  // on retombe sur les 5 dernières demandes pour ne rien casser.
+  let recent = await supabase
     .from("devis")
     .select("id, prenom, nom, created_at")
+    .eq("viewed", false)
     .order("created_at", { ascending: false })
-    .limit(5);
+    .limit(8);
 
-  const notifications = (recent ?? []).map((d) => ({
+  if (recent.error) {
+    recent = await supabase
+      .from("devis")
+      .select("id, prenom, nom, created_at")
+      .order("created_at", { ascending: false })
+      .limit(5);
+  }
+
+  const notifications = (recent.data ?? []).map((d) => ({
     id: d.id,
     type: "devis",
     text: `Nouvelle demande de devis — ${d.prenom} ${d.nom}`,
@@ -56,6 +69,7 @@ export default async function PanelLayout({
   return (
     <AdminShell
       email={user.email ?? "admin"}
+      live
       counts={{ devis: devisCount ?? 0, messages: msgCount ?? 0 }}
       notifications={notifications}
     >

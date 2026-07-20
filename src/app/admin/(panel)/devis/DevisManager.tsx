@@ -54,6 +54,10 @@ export function DevisManager({ initial, live }: { initial: Devis[]; live: boolea
   function openDetail(d: Devis) {
     setSelected(d);
     setNote(d.note_interne ?? "");
+    if (!d.viewed) {
+      setRows((prev) => prev.map((r) => (r.id === d.id ? { ...r, viewed: true } : r)));
+      if (supabase) supabase.from("devis").update({ viewed: true }).eq("id", d.id);
+    }
   }
 
   async function saveNote() {

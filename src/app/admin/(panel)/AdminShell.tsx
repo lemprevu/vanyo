@@ -26,11 +26,13 @@ type Notif = { id: string; type: string; text: string; time: string };
 export function AdminShell({
   children,
   email,
+  live,
   counts,
   notifications,
 }: {
   children: React.ReactNode;
   email: string;
+  live: boolean;
   counts: { devis: number; messages: number };
   notifications: Notif[];
 }) {
@@ -38,12 +40,31 @@ export function AdminShell({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  // Copie locale : on peut la vider dès l'ouverture sans attendre un rechargement serveur.
+  const [notifs, setNotifs] = useState(notifications);
+  const [unreadCount, setUnreadCount] = useState(notifications.length);
 
   async function logout() {
     const supabase = createClient();
     await supabase?.auth.signOut();
     router.push("/admin/login");
     router.refresh();
+  }
+
+  function openNotifications() {
+    setNotifOpen((v) => !v);
+    if (unreadCount === 0) return;
+    // On marque comme lues : le badge disparaît immédiatement, la liste
+    // reste visible le temps de la lecture. Persisté en base pour que la
+    // notification ne réapparaisse pas à la prochaine visite.
+    setUnreadCount(0);
+    if (live) {
+      const supabase = createClient();
+      const ids = notifs.filter((n) => n.type === "devis").map((n) => n.id);
+      if (supabase && ids.length > 0) {
+        supabase.from("devis").update({ viewed: true }).in("id", ids);
+      }
+    }
   }
 
   const badge = (key?: string) =>
@@ -147,13 +168,13 @@ export function AdminShell({
           <div className="ml-auto flex items-center gap-2">
             <div className="relative">
               <button
-                onClick={() => setNotifOpen((v) => !v)}
+                onClick={openNotifications}
                 className="glass relative flex h-10 w-10 items-center justify-center rounded-xl text-white/70 hover:text-white"
               >
                 <Bell className="h-5 w-5" />
-                {notifications.length > 0 && (
+                {unreadCount > 0 && (
                   <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
-                    {notifications.length}
+                    {unreadCount}
                   </span>
                 )}
               </button>
@@ -167,20 +188,25 @@ export function AdminShell({
                   >
                     <div className="flex items-center justify-between px-3 py-2">
                       <span className="text-sm font-semibold text-white">Notifications</span>
-                      <span className="text-xs text-white/40">{notifications.length} non lues</span>
+                      <span className="text-xs text-white/40">{notifs.length} récentes</span>
                     </div>
                     <div className="max-h-80 space-y-1 overflow-y-auto">
-                      {notifications.length === 0 && (
+                      {notifs.length === 0 && (
                         <p className="px-3 py-6 text-center text-sm text-white/40">Aucune notification.</p>
                       )}
-                      {notifications.map((n) => (
-                        <div key={n.id} className="flex gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5">
+                      {notifs.map((n) => (
+                        <Link
+                          key={n.id}
+                          href={n.type === "devis" ? "/admin/devis" : "/admin/messages"}
+                          onClick={() => setNotifOpen(false)}
+                          className="flex gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5"
+                        >
                           <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-vanyo-400" />
                           <div>
                             <p className="text-sm text-white/85">{n.text}</p>
                             <p className="text-xs text-white/40">{n.time}</p>
                           </div>
-                        </div>
+                        </Link>
                       ))}
                     </div>
                   </motion.div>
