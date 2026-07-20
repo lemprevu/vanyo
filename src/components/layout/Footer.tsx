@@ -129,7 +129,11 @@ export function Footer({ settings }: { settings: SiteSettings }) {
           <div className="flex gap-5">
             <Link href="/mentions-legales" className="hover:text-white/70">Mentions légales</Link>
             <Link href="/confidentialite" className="hover:text-white/70">Confidentialité</Link>
-            <Link href="/admin" className="hover:text-white/70">Espace admin</Link>
+            {/* prefetch désactivé : évite qu'un pré-chargement en arrière-plan
+                (avant que la session ne soit vérifiée) ne mette en cache une
+                redirection périmée vers /admin/login pour un utilisateur
+                pourtant déjà connecté. */}
+            <Link href="/admin" prefetch={false} className="hover:text-white/70">Espace admin</Link>
           </div>
         </div>
       </div>
