@@ -11,7 +11,10 @@ alter table public.site_settings add column if not exists twitter_handle     tex
 alter table public.site_settings add column if not exists google_verification text;
 
 -- On recrée la vue publique pour inclure les nouveaux champs SEO.
-create or replace view public.site_settings_public as
+-- (DROP obligatoire : PostgreSQL n'autorise pas l'insertion de colonnes
+--  au milieu d'une vue via CREATE OR REPLACE.)
+drop view if exists public.site_settings_public;
+create view public.site_settings_public as
 select
   id, site_name, tagline, description, email, phone, address, hours,
   instagram, linkedin, twitter, dribbble,
