@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { SiteSettingsFull } from "@/lib/types";
 import { HOME_SECTIONS, FONT_CHOICES } from "@/lib/types";
 import { FieldGroup, Input, Textarea, Select, Label } from "@/components/ui/Field";
+import { TagInput } from "@/components/ui/TagInput";
 import { TwoFactorSetup } from "./TwoFactorSetup";
 
 const TABS = [
@@ -28,6 +29,9 @@ export function SettingsTabs({ initial, live }: { initial: SiteSettingsFull; liv
   const [error, setError] = useState("");
   const [smtpTest, setSmtpTest] = useState<"idle" | "loading" | "ok" | "err">("idle");
   const [smtpMsg, setSmtpMsg] = useState("");
+  const [keywords, setKeywords] = useState<string[]>(
+    (initial.seo_keywords ?? "").split(",").map((k) => k.trim()).filter(Boolean)
+  );
 
   const supabase = live ? createClient() : null;
   const set = <K extends keyof SiteSettingsFull>(k: K, val: SiteSettingsFull[K]) =>
@@ -47,6 +51,8 @@ export function SettingsTabs({ initial, live }: { initial: SiteSettingsFull; liv
       void id;
       const { error } = await supabase.from("site_settings").update(payload).eq("id", 1);
       if (error) { setError(error.message); setSaving(false); return; }
+      // Régénère immédiatement le site public (couleur, SEO…) pour un impact instantané.
+      await fetch("/api/admin/revalidate", { method: "POST" }).catch(() => {});
     }
     setSaving(false); setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -139,20 +145,59 @@ export function SettingsTabs({ initial, live }: { initial: SiteSettingsFull; liv
 
         {/* SEO */}
         {tab === "seo" && (
-          <div className="space-y-4">
-            <FieldGroup label="Mots-clés (séparés par des virgules)">
-              <Input value={v.seo_keywords ?? ""} onChange={field("seo_keywords")} placeholder="création site, agence web, ..." />
-            </FieldGroup>
-            <FieldGroup label="Titre OpenGraph (partage réseaux sociaux)">
-              <Input value={v.og_title ?? ""} onChange={field("og_title")} placeholder="Vanyo — Agence web premium" />
-            </FieldGroup>
-            <FieldGroup label="Description OpenGraph">
-              <Textarea rows={2} value={v.og_description ?? ""} onChange={field("og_description")} />
-            </FieldGroup>
-            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] p-4">
-              <input type="checkbox" checked={v.search_visible} onChange={(e) => set("search_visible", e.target.checked)} className="h-4 w-4 accent-vanyo-500" />
-              <span className="text-sm text-white/70">Site visible par les moteurs de recherche (Google…)</span>
-            </label>
+          <div className="space-y-5">
+            <div>
+              <Label>Mots-clés (ajoutez-les un par un — Entrée pour valider)</Label>
+              <TagInput
+                value={keywords}
+                onChange={(tags) => { setKeywords(tags); set("seo_keywords", tags.join(", ")); }}
+                placeholder="Ex : création site internet"
+              />
+              <p className="mt-1.5 text-xs text-white/40">{keywords.length} mot(s)-clé(s). Ciblez ce que vos clients tapent sur Google.</p>
+            </div>
+
+            <div className="border-t border-white/8 pt-4">
+              <p className="mb-3 text-sm font-medium text-white/70">Référencement (résultats Google)</p>
+              <div className="space-y-4">
+                <FieldGroup label="Titre du site (balise title)">
+                  <Input value={v.og_title ?? ""} onChange={field("og_title")} placeholder="Vanyo — Création de sites internet premium" maxLength={60} />
+                  <p className="mt-1 text-xs text-white/35">{(v.og_title ?? "").length}/60 caractères recommandés</p>
+                </FieldGroup>
+                <FieldGroup label="Description (extrait affiché dans Google)">
+                  <Textarea rows={3} value={v.meta_description ?? ""} onChange={field("meta_description")} maxLength={160} placeholder="Vanyo conçoit des sites modernes, rapides et pensés pour convertir…" />
+                  <p className="mt-1 text-xs text-white/35">{(v.meta_description ?? "").length}/160 caractères recommandés</p>
+                </FieldGroup>
+              </div>
+            </div>
+
+            <div className="border-t border-white/8 pt-4">
+              <p className="mb-3 text-sm font-medium text-white/70">Partage sur les réseaux sociaux (OpenGraph)</p>
+              <div className="space-y-4">
+                <FieldGroup label="Titre au partage">
+                  <Input value={v.og_title ?? ""} onChange={field("og_title")} placeholder="Vanyo — Agence web premium" />
+                </FieldGroup>
+                <FieldGroup label="Description au partage">
+                  <Textarea rows={2} value={v.og_description ?? ""} onChange={field("og_description")} />
+                </FieldGroup>
+                <FieldGroup label="Image de partage (URL, format 1200×630)">
+                  <Input value={v.og_image ?? ""} onChange={field("og_image")} placeholder="https://vanyo.fr/og.jpg" />
+                </FieldGroup>
+                <FieldGroup label="Compte Twitter / X (@handle)">
+                  <Input value={v.twitter_handle ?? ""} onChange={field("twitter_handle")} placeholder="@vanyo" />
+                </FieldGroup>
+              </div>
+            </div>
+
+            <div className="border-t border-white/8 pt-4">
+              <p className="mb-3 text-sm font-medium text-white/70">Avancé</p>
+              <FieldGroup label="Vérification Google Search Console (code meta)">
+                <Input value={v.google_verification ?? ""} onChange={field("google_verification")} placeholder="Code fourni par Google Search Console" />
+              </FieldGroup>
+              <label className="mt-4 flex cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] p-4">
+                <input type="checkbox" checked={v.search_visible} onChange={(e) => set("search_visible", e.target.checked)} className="h-4 w-4 accent-vanyo-500" />
+                <span className="text-sm text-white/70">Site visible par les moteurs de recherche (Google…)</span>
+              </label>
+            </div>
           </div>
         )}
 

@@ -91,14 +91,14 @@ body {
 }
 
 .text-gradient {
-  background: linear-gradient(120deg, #ffffff 0%, #c9b8ff 55%, #a855f7 100%);
+  background: linear-gradient(120deg, #ffffff 0%, var(--color-vanyo-200) 55%, var(--color-violet-hi) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 .text-gradient-violet {
-  background: linear-gradient(120deg, #6d4aff, #8b5cf6, #a855f7);
+  background: linear-gradient(120deg, var(--color-vanyo-500), var(--color-violet-mid), var(--color-violet-hi));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -204,7 +204,7 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(120deg, #6d4aff, #8b5cf6 55%, #a855f7);
+  background: linear-gradient(120deg, var(--color-vanyo-500), var(--color-violet-mid) 55%, var(--color-violet-hi));
   color: #fff;
   box-shadow: 0 10px 40px -12px rgba(109, 74, 255, 0.8);
 }

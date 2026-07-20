@@ -99,9 +99,24 @@ export type SiteSettings = {
   og_title: string | null;
   og_description: string | null;
   search_visible: boolean;
+  meta_description: string | null;
+  og_image: string | null;
+  twitter_handle: string | null;
+  google_verification: string | null;
   ga_id: string | null;
   meta_pixel_id: string | null;
   turnstile_site_key: string | null;
+};
+
+export type PromoCode = {
+  id: string;
+  created_at: string;
+  code: string;
+  description: string | null;
+  discount_type: "percent" | "amount";
+  discount_value: number;
+  active: boolean;
+  expires_at: string | null;
 };
 
 /** Champs complets (avec secrets) — uniquement côté serveur / admin. */

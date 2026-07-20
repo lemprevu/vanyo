@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Check, X } from "lucide-react";
 import { PageHeader } from "@/components/sections/PageHeader";
-import { PricingSection } from "@/components/sections/PricingSection";
+import { PricingWithPromo } from "@/components/sections/PricingWithPromo";
 import { FaqSection } from "@/components/sections/FaqSection";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Reveal } from "@/components/ui/Reveal";
@@ -45,7 +45,7 @@ export default async function TarifsPage() {
         title={<>Un prix juste pour un <span className="text-gradient-violet">site d'exception</span></>}
         subtitle="Pas de coûts cachés. Vous savez exactement ce que vous payez, et pourquoi."
       />
-      <PricingSection heading={false} plans={plans} />
+      <PricingWithPromo plans={plans} />
 
       <section className="container-v py-16">
         <SectionHeading eyebrow="Comparatif" title={<>Comparez les <span className="text-gradient-violet">formules</span></>} />

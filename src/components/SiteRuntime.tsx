@@ -19,6 +19,8 @@ export function SiteRuntime({ settings }: { settings: SiteSettings }) {
 
   // Palette dérivée pour conserver de jolis dégradés.
   const vars = `:root{
+    --color-vanyo-100:${shade(c, 0.72)};
+    --color-vanyo-200:${shade(c, 0.58)};
     --color-vanyo-300:${shade(c, 0.4)};
     --color-vanyo-400:${shade(c, 0.2)};
     --color-vanyo-500:${c};

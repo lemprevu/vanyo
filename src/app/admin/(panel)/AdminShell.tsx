@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import {
   LayoutDashboard, FileText, MessageSquare, Image as ImageIcon, Newspaper,
-  Settings, Bell, LogOut, Menu, X, Search, Star, Users, Mail,
+  Settings, Bell, LogOut, Menu, X, Search, Star, Users, Mail, Ticket,
 } from "lucide-react";
 import { LogoMark } from "@/components/Logo";
 import { createClient } from "@/lib/supabase/client";
@@ -18,6 +18,7 @@ const NAV = [
   { label: "Réalisations", href: "/admin/realisations", icon: ImageIcon },
   { label: "Blog", href: "/admin/blog", icon: Newspaper },
   { label: "Avis", href: "/admin/avis", icon: Star },
+  { label: "Codes promo", href: "/admin/codes-promo", icon: Ticket },
   { label: "Utilisateurs", href: "/admin/utilisateurs", icon: Users },
   { label: "Signature email", href: "/admin/signature", icon: Mail },
   { label: "Paramètres", href: "/admin/parametres", icon: Settings },

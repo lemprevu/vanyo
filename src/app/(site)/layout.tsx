@@ -11,21 +11,33 @@ import { getSiteSettings } from "@/lib/data";
 
 export const revalidate = 60;
 
-/** Métadonnées SEO dynamiques (mots-clés, OpenGraph, visibilité moteurs). */
+/** Métadonnées SEO dynamiques (titre, description, mots-clés, OpenGraph, robots). */
 export async function generateMetadata(): Promise<Metadata> {
   const s = await getSiteSettings();
+  const ogDesc = s.og_description || s.meta_description || s.description || undefined;
+  const ogImages = s.og_image ? [{ url: s.og_image }] : undefined;
+
   return {
+    title: s.og_title || undefined,
+    description: s.meta_description || s.description || undefined,
     keywords: s.seo_keywords
       ? s.seo_keywords.split(",").map((k) => k.trim()).filter(Boolean)
       : undefined,
     openGraph: {
       title: s.og_title || undefined,
-      description: s.og_description || s.description || undefined,
+      description: ogDesc,
+      images: ogImages,
     },
     twitter: {
+      card: "summary_large_image",
+      site: s.twitter_handle || undefined,
       title: s.og_title || undefined,
-      description: s.og_description || s.description || undefined,
+      description: ogDesc,
+      images: ogImages,
     },
+    verification: s.google_verification
+      ? { google: s.google_verification }
+      : undefined,
     robots: s.search_visible ? { index: true, follow: true } : { index: false, follow: false },
   };
 }
