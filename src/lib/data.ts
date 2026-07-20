@@ -2,8 +2,11 @@
  * Récupération du contenu éditable (Supabase) avec repli automatique
  * sur le contenu statique de démonstration (`content.ts`) quand
  * Supabase n'est pas configuré ou qu'une table est vide.
+ *
+ * Utilise le client « public » (sans cookies) : ces lectures sont
+ * anonymes et ne doivent jamais forcer le rendu dynamique des pages.
  */
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { SITE } from "@/lib/site";
 import {
   PROJECTS, ARTICLES, TESTIMONIALS, PLANS,
@@ -12,7 +15,7 @@ import {
 import type { Realisation, Article, Avis, Plan, SiteSettings } from "@/lib/types";
 
 export async function getRealisations(): Promise<Project[]> {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   if (!supabase) return PROJECTS;
 
   const { data } = await supabase.from("realisations").select("*").order("position", { ascending: true });
@@ -25,7 +28,7 @@ export async function getRealisations(): Promise<Project[]> {
 }
 
 export async function getArticles(): Promise<StaticArticle[]> {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   if (!supabase) return ARTICLES;
 
   const { data } = await supabase
@@ -40,7 +43,7 @@ export async function getArticles(): Promise<StaticArticle[]> {
 }
 
 export async function getArticleBySlug(slug: string): Promise<(StaticArticle & { content?: string | null }) | null> {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   if (supabase) {
     const { data } = await supabase.from("articles").select("*").eq("slug", slug).eq("published", true).maybeSingle();
     if (data) {
@@ -55,7 +58,7 @@ export async function getArticleBySlug(slug: string): Promise<(StaticArticle & {
 }
 
 export async function getAvis(): Promise<Testimonial[]> {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   if (!supabase) return TESTIMONIALS;
 
   const { data } = await supabase.from("avis").select("*").eq("featured", true).order("position", { ascending: true });
@@ -69,7 +72,7 @@ export async function getAvis(): Promise<Testimonial[]> {
 }
 
 export async function getPlans(): Promise<StaticPlan[]> {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   if (!supabase) return PLANS;
 
   const { data } = await supabase.from("plans").select("*").order("position", { ascending: true });
@@ -99,7 +102,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     dribbble: SITE.socials.dribbble,
   };
 
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   if (!supabase) return fallback;
 
   const { data } = await supabase.from("site_settings").select("*").eq("id", 1).maybeSingle();

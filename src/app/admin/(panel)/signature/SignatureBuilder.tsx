@@ -40,7 +40,9 @@ export function SignatureBuilder({ settings }: { settings: SiteSettings }) {
   const [copied, setCopied] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
 
-  const logoUrl = `${SITE.domain}/logo.svg`;
+  // PNG plutôt que SVG : la plupart des clients mails (Outlook en tête)
+  // n'affichent pas les images SVG dans le corps d'un email.
+  const logoUrl = `${SITE.domain}/logo-email.png`;
   const siteUrl = SITE.domain;
   const color = "#6D4AFF";
 
