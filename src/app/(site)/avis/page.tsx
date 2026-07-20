@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { Star } from "lucide-react";
 import { PageHeader } from "@/components/sections/PageHeader";
 import { Testimonials } from "@/components/sections/Testimonials";
-import { TESTIMONIALS } from "@/lib/content";
 import { StaggerGroup, StaggerItem } from "@/components/ui/Reveal";
 import { GlowCard } from "@/components/ui/GlowCard";
+import { getAvis } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "Avis clients",
@@ -12,7 +12,10 @@ export const metadata: Metadata = {
     "Ce que nos clients pensent de Vanyo : restaurants, entreprises, commerces et associations témoignent de leur expérience.",
 };
 
-export default function AvisPage() {
+export const revalidate = 60;
+
+export default async function AvisPage() {
+  const testimonials = await getAvis();
   return (
     <>
       <PageHeader
@@ -20,10 +23,10 @@ export default function AvisPage() {
         title={<>La parole à <span className="text-gradient-violet">nos clients</span></>}
         subtitle="Des dizaines d'entreprises nous font confiance. Voici pourquoi."
       />
-      <Testimonials />
+      <Testimonials testimonials={testimonials} />
       <section className="container-v pb-20">
         <StaggerGroup stagger={0.06} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {TESTIMONIALS.map((t) => (
+          {testimonials.map((t) => (
             <StaggerItem key={t.name} direction="up" className="h-full">
               <GlowCard className="h-full">
                 <div className="flex items-center gap-0.5 text-amber-400">

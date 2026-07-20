@@ -3,12 +3,20 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowUpRight } from "lucide-react";
-import { PROJECTS, PROJECT_CATEGORIES } from "@/lib/content";
+import { PROJECTS, PROJECT_CATEGORIES, type Project } from "@/lib/content";
 
-export function Gallery({ withFilters = true, limit }: { withFilters?: boolean; limit?: number }) {
+export function Gallery({
+  withFilters = true,
+  limit,
+  projects = PROJECTS,
+}: {
+  withFilters?: boolean;
+  limit?: number;
+  projects?: Project[];
+}) {
   const [active, setActive] = useState("Tous");
 
-  const base = limit ? PROJECTS.slice(0, limit) : PROJECTS;
+  const base = limit ? projects.slice(0, limit) : projects;
   const filtered =
     active === "Tous" ? base : base.filter((p) => p.category === active);
 

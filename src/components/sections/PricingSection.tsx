@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { Check, Sparkles } from "lucide-react";
-import { PLANS } from "@/lib/content";
+import { PLANS, type Plan } from "@/lib/content";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { StaggerGroup, StaggerItem } from "@/components/ui/Reveal";
 
-export function PricingSection({ heading = true }: { heading?: boolean }) {
+export function PricingSection({ heading = true, plans = PLANS }: { heading?: boolean; plans?: Plan[] }) {
   return (
     <section className="container-v py-20">
       {heading && (
@@ -19,7 +19,7 @@ export function PricingSection({ heading = true }: { heading?: boolean }) {
         stagger={0.08}
         className="mt-14 grid gap-5 lg:grid-cols-4"
       >
-        {PLANS.map((plan) => (
+        {plans.map((plan) => (
           <StaggerItem key={plan.name} direction="up" className="h-full">
             <div
               className={`relative flex h-full flex-col rounded-2xl p-6 transition-transform duration-500 hover:-translate-y-2 ${

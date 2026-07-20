@@ -5,12 +5,15 @@ import { PricingSection } from "@/components/sections/PricingSection";
 import { FaqSection } from "@/components/sections/FaqSection";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Reveal } from "@/components/ui/Reveal";
+import { getPlans } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "Tarifs",
   description:
     "Des tarifs transparents pour la création de votre site internet : packs Starter, Business, Premium et Sur Mesure. Devis gratuit et sans engagement.",
 };
+
+export const revalidate = 60;
 
 const rows: { feature: string; values: (boolean | string)[] }[] = [
   { feature: "Design sur mesure", values: [true, true, true, true] },
@@ -33,7 +36,8 @@ function Cell({ v }: { v: boolean | string }) {
   return <span className="text-sm text-white/70">{v}</span>;
 }
 
-export default function TarifsPage() {
+export default async function TarifsPage() {
+  const plans = await getPlans();
   return (
     <>
       <PageHeader
@@ -41,7 +45,7 @@ export default function TarifsPage() {
         title={<>Un prix juste pour un <span className="text-gradient-violet">site d'exception</span></>}
         subtitle="Pas de coûts cachés. Vous savez exactement ce que vous payez, et pourquoi."
       />
-      <PricingSection heading={false} />
+      <PricingSection heading={false} plans={plans} />
 
       <section className="container-v py-16">
         <SectionHeading eyebrow="Comparatif" title={<>Comparez les <span className="text-gradient-violet">formules</span></>} />

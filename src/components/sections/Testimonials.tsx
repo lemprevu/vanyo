@@ -3,23 +3,23 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Star, Quote, ChevronLeft, ChevronRight } from "lucide-react";
-import { TESTIMONIALS } from "@/lib/content";
+import { TESTIMONIALS, type Testimonial } from "@/lib/content";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
-export function Testimonials() {
+export function Testimonials({ testimonials = TESTIMONIALS }: { testimonials?: Testimonial[] }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {
     if (paused) return;
-    const t = setInterval(() => setIndex((i) => (i + 1) % TESTIMONIALS.length), 5000);
+    const t = setInterval(() => setIndex((i) => (i + 1) % testimonials.length), 5000);
     return () => clearInterval(t);
-  }, [paused]);
+  }, [paused, testimonials.length]);
 
-  const t = TESTIMONIALS[index];
+  const t = testimonials[index];
 
   const go = (dir: number) =>
-    setIndex((i) => (i + dir + TESTIMONIALS.length) % TESTIMONIALS.length);
+    setIndex((i) => (i + dir + testimonials.length) % testimonials.length);
 
   return (
     <section
@@ -74,7 +74,7 @@ export function Testimonials() {
             <ChevronLeft className="h-5 w-5" />
           </button>
           <div className="flex gap-1.5">
-            {TESTIMONIALS.map((_, i) => (
+            {testimonials.map((_, i) => (
               <button
                 key={i}
                 onClick={() => setIndex(i)}

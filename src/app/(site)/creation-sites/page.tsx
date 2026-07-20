@@ -7,6 +7,9 @@ import { GlowCard } from "@/components/ui/GlowCard";
 import { StaggerGroup, StaggerItem } from "@/components/ui/Reveal";
 import { Icon } from "@/components/ui/Icon";
 import { ButtonLink } from "@/components/ui/Button";
+import { getPlans } from "@/lib/data";
+
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Création de sites internet",
@@ -23,7 +26,8 @@ const TYPES = [
   { icon: "RefreshCw", title: "Refonte de site", text: "On modernise votre site sans perdre votre référencement existant.", pour: "Sites vieillissants ou lents" },
 ];
 
-export default function CreationSitesPage() {
+export default async function CreationSitesPage() {
+  const plans = await getPlans();
   return (
     <>
       <PageHeader
@@ -77,7 +81,7 @@ export default function CreationSitesPage() {
       </div>
 
       <ProcessSection />
-      <PricingSection />
+      <PricingSection plans={plans} />
     </>
   );
 }

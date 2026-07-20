@@ -3,11 +3,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Calendar, Clock, ArrowLeft } from "lucide-react";
 import { ARTICLES } from "@/lib/content";
+import { getArticleBySlug } from "@/lib/data";
 import { ButtonLink } from "@/components/ui/Button";
 
 export function generateStaticParams() {
   return ARTICLES.map((a) => ({ slug: a.slug }));
 }
+
+export const revalidate = 60;
 
 export async function generateMetadata({
   params,
@@ -15,7 +18,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const article = ARTICLES.find((a) => a.slug === slug);
+  const article = await getArticleBySlug(slug);
   if (!article) return { title: "Article introuvable" };
   return { title: article.title, description: article.excerpt };
 }
@@ -26,8 +29,12 @@ export default async function ArticlePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const article = ARTICLES.find((a) => a.slug === slug);
+  const article = await getArticleBySlug(slug);
   if (!article) notFound();
+
+  const paragraphs = article.content
+    ? article.content.split("\n").map((p) => p.trim()).filter(Boolean)
+    : null;
 
   return (
     <article className="container-v max-w-3xl py-10">
@@ -55,27 +62,34 @@ export default async function ArticlePage({
 
       <div className="prose-vanyo mt-10 space-y-5 text-pretty leading-relaxed text-white/70">
         <p className="text-lg text-white/80">{article.excerpt}</p>
-        <p>
-          Chez Vanyo, nous sommes convaincus qu'un bon site n'est pas seulement beau : il doit
-          être rapide, trouvable sur Google et pensé pour vos objectifs. Dans cet article, nous
-          partageons notre approche et nos conseils concrets.
-        </p>
-        <h2 className="text-xl font-semibold text-white">Ce qu'il faut retenir</h2>
-        <p>
-          La réussite d'un projet web repose sur trois piliers : une stratégie claire, une
-          exécution soignée et un suivi dans la durée. Chaque décision de design ou de technique
-          doit servir votre visiteur — et donc votre activité.
-        </p>
-        <ul className="list-disc space-y-2 pl-6">
-          <li>Un design épuré qui met en avant l'essentiel.</li>
-          <li>Des performances au top pour ne perdre aucun visiteur.</li>
-          <li>Un référencement solide dès la conception.</li>
-          <li>Un contenu qui parle à vos clients.</li>
-        </ul>
-        <p>
-          Envie d'aller plus loin sur votre propre projet ? Parlons-en. Le premier échange est
-          gratuit et sans engagement.
-        </p>
+
+        {paragraphs ? (
+          paragraphs.map((p, i) => <p key={i}>{p}</p>)
+        ) : (
+          <>
+            <p>
+              Chez Vanyo, nous sommes convaincus qu'un bon site n'est pas seulement beau : il doit
+              être rapide, trouvable sur Google et pensé pour vos objectifs. Dans cet article, nous
+              partageons notre approche et nos conseils concrets.
+            </p>
+            <h2 className="text-xl font-semibold text-white">Ce qu'il faut retenir</h2>
+            <p>
+              La réussite d'un projet web repose sur trois piliers : une stratégie claire, une
+              exécution soignée et un suivi dans la durée. Chaque décision de design ou de technique
+              doit servir votre visiteur — et donc votre activité.
+            </p>
+            <ul className="list-disc space-y-2 pl-6">
+              <li>Un design épuré qui met en avant l'essentiel.</li>
+              <li>Des performances au top pour ne perdre aucun visiteur.</li>
+              <li>Un référencement solide dès la conception.</li>
+              <li>Un contenu qui parle à vos clients.</li>
+            </ul>
+            <p>
+              Envie d'aller plus loin sur votre propre projet ? Parlons-en. Le premier échange est
+              gratuit et sans engagement.
+            </p>
+          </>
+        )}
       </div>
 
       <div className="mt-12 rounded-2xl border border-white/8 bg-white/[0.02] p-6 text-center">

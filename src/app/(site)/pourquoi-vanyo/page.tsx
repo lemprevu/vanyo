@@ -4,6 +4,7 @@ import { WhySection } from "@/components/sections/WhySection";
 import { StatsBar } from "@/components/sections/StatsBar";
 import { Testimonials } from "@/components/sections/Testimonials";
 import { ButtonLink } from "@/components/ui/Button";
+import { getAvis } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "Pourquoi Vanyo",
@@ -11,7 +12,10 @@ export const metadata: Metadata = {
     "Design moderne, performance, SEO, sécurité, support et accompagnement : découvrez pourquoi tant d'entreprises choisissent Vanyo pour leur site internet.",
 };
 
-export default function PourquoiPage() {
+export const revalidate = 60;
+
+export default async function PourquoiPage() {
+  const testimonials = await getAvis();
   return (
     <>
       <PageHeader
@@ -23,7 +27,7 @@ export default function PourquoiPage() {
       </PageHeader>
       <StatsBar />
       <WhySection />
-      <Testimonials />
+      <Testimonials testimonials={testimonials} />
     </>
   );
 }

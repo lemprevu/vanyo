@@ -4,23 +4,22 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { Search, Calendar, Clock, ArrowUpRight } from "lucide-react";
-import { ARTICLES } from "@/lib/content";
+import { ARTICLES, type Article } from "@/lib/content";
 
-const CATEGORIES = ["Tous", ...Array.from(new Set(ARTICLES.map((a) => a.category)))];
-
-export function BlogList() {
+export function BlogList({ articles = ARTICLES }: { articles?: Article[] }) {
   const [query, setQuery] = useState("");
   const [cat, setCat] = useState("Tous");
+  const CATEGORIES = ["Tous", ...Array.from(new Set(articles.map((a) => a.category)))];
 
   const filtered = useMemo(() => {
-    return ARTICLES.filter((a) => {
+    return articles.filter((a) => {
       const matchCat = cat === "Tous" || a.category === cat;
       const matchQuery =
         a.title.toLowerCase().includes(query.toLowerCase()) ||
         a.excerpt.toLowerCase().includes(query.toLowerCase());
       return matchCat && matchQuery;
     });
-  }, [query, cat]);
+  }, [query, cat, articles]);
 
   return (
     <div className="container-v py-8 pb-20">

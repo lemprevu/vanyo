@@ -9,8 +9,15 @@ import { Gallery } from "@/components/sections/Gallery";
 import { PricingSection } from "@/components/sections/PricingSection";
 import { Testimonials } from "@/components/sections/Testimonials";
 import { FaqSection } from "@/components/sections/FaqSection";
+import { getRealisations, getAvis, getPlans } from "@/lib/data";
 
-export default function HomePage() {
+export const revalidate = 60;
+
+export default async function HomePage() {
+  const [projects, testimonials, plans] = await Promise.all([
+    getRealisations(), getAvis(), getPlans(),
+  ]);
+
   return (
     <>
       <Hero />
@@ -27,12 +34,12 @@ export default function HomePage() {
           subtitle="Un aperçu de sites que nous avons imaginés et développés pour nos clients."
         />
         <div className="mt-12">
-          <Gallery withFilters={false} limit={6} />
+          <Gallery withFilters={false} limit={6} projects={projects} />
         </div>
       </section>
 
-      <PricingSection />
-      <Testimonials />
+      <PricingSection plans={plans} />
+      <Testimonials testimonials={testimonials} />
       <FaqSection />
     </>
   );
