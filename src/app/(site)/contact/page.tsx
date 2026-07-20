@@ -91,7 +91,7 @@ export default async function ContactPage() {
             <h2 className="text-xl font-semibold text-white">Envoyez-nous un message</h2>
             <p className="mt-1 text-sm text-white/50">Nous répondons généralement sous 2 heures.</p>
             <div className="mt-6">
-              <ContactForm />
+              <ContactForm turnstileKey={settings.turnstile_site_key} />
             </div>
           </div>
         </Reveal>

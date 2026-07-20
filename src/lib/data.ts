@@ -85,27 +85,41 @@ export async function getPlans(): Promise<StaticPlan[]> {
   }));
 }
 
-/** Coordonnées et informations générales du site, éditables depuis /admin/parametres. */
+export const SETTINGS_FALLBACK: SiteSettings = {
+  id: 1,
+  site_name: SITE.name,
+  tagline: SITE.tagline,
+  description: SITE.description,
+  email: SITE.email,
+  phone: SITE.phone,
+  address: SITE.address,
+  hours: SITE.hours,
+  instagram: SITE.socials.instagram,
+  linkedin: SITE.socials.linkedin,
+  twitter: SITE.socials.twitter,
+  dribbble: SITE.socials.dribbble,
+  brand_color: "#6D4AFF",
+  font_family: "Geist",
+  home_sections: ["stats", "logos", "services", "why", "process", "realisations", "pricing", "testimonials", "faq"],
+  seo_keywords: null,
+  og_title: null,
+  og_description: null,
+  search_visible: true,
+  ga_id: null,
+  meta_pixel_id: null,
+  turnstile_site_key: null,
+};
+
+/**
+ * Réglages publics du site (SANS secrets), lus via la vue Supabase
+ * `site_settings_public`. Utilisé partout sur le site public.
+ */
 export async function getSiteSettings(): Promise<SiteSettings> {
-  const fallback: SiteSettings = {
-    id: 1,
-    site_name: SITE.name,
-    tagline: SITE.tagline,
-    description: SITE.description,
-    email: SITE.email,
-    phone: SITE.phone,
-    address: SITE.address,
-    hours: SITE.hours,
-    instagram: SITE.socials.instagram,
-    linkedin: SITE.socials.linkedin,
-    twitter: SITE.socials.twitter,
-    dribbble: SITE.socials.dribbble,
-  };
-
   const supabase = createPublicClient();
-  if (!supabase) return fallback;
+  if (!supabase) return SETTINGS_FALLBACK;
 
-  const { data } = await supabase.from("site_settings").select("*").eq("id", 1).maybeSingle();
-  if (!data) return fallback;
-  return data as SiteSettings;
+  const { data } = await supabase.from("site_settings_public").select("*").eq("id", 1).maybeSingle();
+  if (!data) return SETTINGS_FALLBACK;
+  // Fusion avec le fallback pour couvrir un éventuel champ null.
+  return { ...SETTINGS_FALLBACK, ...(data as Partial<SiteSettings>) } as SiteSettings;
 }

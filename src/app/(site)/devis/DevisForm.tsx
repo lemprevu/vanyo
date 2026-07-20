@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { CheckCircle2, Loader2, ArrowRight, ArrowLeft, Send } from "lucide-react";
 import { FieldGroup, Input, Textarea, Label } from "@/components/ui/Field";
+import { Turnstile } from "@/components/Turnstile";
 import {
   SITE_TYPES, FEATURES, BUDGETS, TRISTATE, LOGO_STATE,
 } from "@/lib/devis";
@@ -59,11 +60,12 @@ function StepPane({
   );
 }
 
-export function DevisForm() {
+export function DevisForm({ turnstileKey }: { turnstileKey?: string | null }) {
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [status, setStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
   const [error, setError] = useState("");
+  const [token, setToken] = useState("");
 
   // Champs à choix contrôlés
   const [typeSite, setTypeSite] = useState("");
@@ -106,6 +108,7 @@ export function DevisForm() {
       date_souhaitee: fd.get("date_souhaitee"),
       description: fd.get("description"),
       rgpd: fd.get("rgpd") === "on",
+      turnstileToken: token,
     };
 
     if (!payload.rgpd) {
@@ -337,6 +340,8 @@ export function DevisForm() {
                   conformément à la politique de confidentialité. <span className="text-vanyo-400">*</span>
                 </span>
               </label>
+
+              <Turnstile siteKey={turnstileKey} onToken={setToken} />
             </div>
           </StepPane>
         </div>

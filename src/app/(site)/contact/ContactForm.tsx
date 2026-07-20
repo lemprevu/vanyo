@@ -3,16 +3,18 @@
 import { useState } from "react";
 import { Send, CheckCircle2, Loader2 } from "lucide-react";
 import { FieldGroup, Input, Textarea } from "@/components/ui/Field";
+import { Turnstile } from "@/components/Turnstile";
 
-export function ContactForm() {
+export function ContactForm({ turnstileKey }: { turnstileKey?: string | null }) {
   const [status, setStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
   const [error, setError] = useState("");
+  const [token, setToken] = useState("");
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setStatus("loading");
     setError("");
-    const data = Object.fromEntries(new FormData(e.currentTarget));
+    const data = { ...Object.fromEntries(new FormData(e.currentTarget)), turnstileToken: token };
     try {
       const res = await fetch("/api/contact", {
         method: "POST",
@@ -56,6 +58,8 @@ export function ContactForm() {
       <FieldGroup label="Message" required>
         <Textarea name="message" required rows={6} placeholder="Décrivez votre besoin…" />
       </FieldGroup>
+
+      <Turnstile siteKey={turnstileKey} onToken={setToken} />
 
       {status === "error" && (
         <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 text-sm text-rose-300">

@@ -59,6 +59,26 @@ export type AdminProfile = {
   created_at: string;
 };
 
+export const HOME_SECTIONS = [
+  { key: "stats", label: "Bandeau statistiques" },
+  { key: "logos", label: "Bandeau « Ils nous font confiance »" },
+  { key: "services", label: "Nos services" },
+  { key: "why", label: "Pourquoi Vanyo" },
+  { key: "process", label: "Processus" },
+  { key: "realisations", label: "Réalisations" },
+  { key: "pricing", label: "Tarifs" },
+  { key: "testimonials", label: "Avis clients" },
+  { key: "faq", label: "FAQ" },
+] as const;
+
+export const FONT_CHOICES = [
+  { key: "Geist", label: "Geist (défaut)" },
+  { key: "Inter", label: "Inter" },
+  { key: "Poppins", label: "Poppins" },
+  { key: "Montserrat", label: "Montserrat" },
+] as const;
+
+/** Champs publics (sans secrets) — sûrs à envoyer au navigateur. */
 export type SiteSettings = {
   id: number;
   site_name: string;
@@ -72,6 +92,27 @@ export type SiteSettings = {
   linkedin: string | null;
   twitter: string | null;
   dribbble: string | null;
+  brand_color: string;
+  font_family: string;
+  home_sections: string[];
+  seo_keywords: string | null;
+  og_title: string | null;
+  og_description: string | null;
+  search_visible: boolean;
+  ga_id: string | null;
+  meta_pixel_id: string | null;
+  turnstile_site_key: string | null;
+};
+
+/** Champs complets (avec secrets) — uniquement côté serveur / admin. */
+export type SiteSettingsFull = SiteSettings & {
+  turnstile_secret: string | null;
+  smtp_host: string | null;
+  smtp_port: number | null;
+  smtp_user: string | null;
+  smtp_password: string | null;
+  smtp_from: string | null;
+  notify_email: string | null;
 };
 
 export const CATEGORIES_REALISATIONS = [

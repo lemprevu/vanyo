@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { rateLimit, clientIp } from "@/lib/rateLimit";
 import { req, str, clean } from "@/lib/validate";
+import { verifyTurnstile } from "@/lib/turnstile";
 
 /**
  * Réception d'un avis client public.
@@ -34,6 +35,9 @@ export async function POST(request: Request) {
   }
   if (!Number.isInteger(ratingNum) || ratingNum < 1 || ratingNum > 5) {
     return NextResponse.json({ error: "Note invalide." }, { status: 400 });
+  }
+  if (!(await verifyTurnstile(body.turnstileToken))) {
+    return NextResponse.json({ error: "Vérification anti-spam échouée. Réessayez." }, { status: 400 });
   }
 
   const record = {

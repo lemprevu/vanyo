@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/sections/PageHeader";
 import { Testimonials } from "@/components/sections/Testimonials";
 import { StaggerGroup, StaggerItem } from "@/components/ui/Reveal";
 import { GlowCard } from "@/components/ui/GlowCard";
-import { getAvis } from "@/lib/data";
+import { getAvis, getSiteSettings } from "@/lib/data";
 import { LeaveReviewForm } from "./LeaveReviewForm";
 
 export const metadata: Metadata = {
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 export default async function AvisPage() {
-  const testimonials = await getAvis();
+  const [testimonials, settings] = await Promise.all([getAvis(), getSiteSettings()]);
   return (
     <>
       <PageHeader
@@ -51,7 +51,7 @@ export default async function AvisPage() {
         </StaggerGroup>
       </section>
       <section className="container-v max-w-2xl pb-24">
-        <LeaveReviewForm />
+        <LeaveReviewForm turnstileKey={settings.turnstile_site_key} />
       </section>
     </>
   );

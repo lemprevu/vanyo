@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { rateLimit, clientIp } from "@/lib/rateLimit";
 import { isEmail, req, str, clean, strArray } from "@/lib/validate";
+import { sendNotification, emailTemplate } from "@/lib/mailer";
+import { verifyTurnstile } from "@/lib/turnstile";
 
 /**
  * Réception d'une demande de devis publique.
@@ -38,6 +40,9 @@ export async function POST(request: Request) {
   }
   if (body.rgpd !== true) {
     return NextResponse.json({ error: "Consentement RGPD requis." }, { status: 400 });
+  }
+  if (!(await verifyTurnstile(body.turnstileToken))) {
+    return NextResponse.json({ error: "Vérification anti-spam échouée. Réessayez." }, { status: 400 });
   }
 
   const record = {
@@ -84,6 +89,24 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+
+  // Notification email (silencieuse si SMTP non configuré).
+  await sendNotification(
+    `Nouvelle demande de devis — ${record.prenom} ${record.nom}`,
+    emailTemplate(
+      "Nouvelle demande de devis",
+      [
+        ["Nom", `${record.prenom} ${record.nom}`],
+        ["Entreprise", record.entreprise ?? ""],
+        ["Email", record.email],
+        ["Téléphone", record.telephone ?? ""],
+        ["Type de site", record.type_site ?? ""],
+        ["Budget", record.budget ?? ""],
+        ["Fonctionnalités", (record.fonctionnalites ?? []).join(", ")],
+      ],
+      record.description ?? ""
+    )
+  );
 
   return NextResponse.json({ ok: true, persisted: true });
 }

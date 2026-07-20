@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Clock, ShieldCheck, Gift } from "lucide-react";
 import { PageHeader } from "@/components/sections/PageHeader";
 import { DevisForm } from "./DevisForm";
+import { getSiteSettings } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "Demande de devis",
@@ -9,13 +10,16 @@ export const metadata: Metadata = {
     "Demandez votre devis gratuit et personnalisé pour la création de votre site internet. Réponse sous quelques heures, sans engagement.",
 };
 
+export const revalidate = 60;
+
 const perks = [
   { Icon: Gift, title: "Gratuit & sans engagement", text: "Aucun frais, aucune obligation." },
   { Icon: Clock, title: "Réponse rapide", text: "Une proposition sous quelques heures." },
   { Icon: ShieldCheck, title: "Données protégées", text: "Vos informations restent confidentielles." },
 ];
 
-export default function DevisPage() {
+export default async function DevisPage() {
+  const settings = await getSiteSettings();
   return (
     <>
       <PageHeader
@@ -40,7 +44,7 @@ export default function DevisPage() {
         </div>
 
         <div className="mx-auto max-w-3xl">
-          <DevisForm />
+          <DevisForm turnstileKey={settings.turnstile_site_key} />
         </div>
       </section>
     </>

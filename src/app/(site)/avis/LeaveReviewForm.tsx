@@ -4,11 +4,13 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { Star, Send, CheckCircle2, Loader2 } from "lucide-react";
 import { FieldGroup, Input, Textarea } from "@/components/ui/Field";
+import { Turnstile } from "@/components/Turnstile";
 
-export function LeaveReviewForm() {
+export function LeaveReviewForm({ turnstileKey }: { turnstileKey?: string | null }) {
   const [rating, setRating] = useState(5);
   const [status, setStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
   const [error, setError] = useState("");
+  const [token, setToken] = useState("");
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -20,6 +22,7 @@ export function LeaveReviewForm() {
       company: fd.get("company"),
       quote: fd.get("quote"),
       rating,
+      turnstileToken: token,
     };
     try {
       const res = await fetch("/api/avis", {
@@ -85,6 +88,8 @@ export function LeaveReviewForm() {
         <FieldGroup label="Votre avis" required>
           <Textarea name="quote" required rows={4} placeholder="Racontez votre expérience avec Vanyo…" />
         </FieldGroup>
+
+        <Turnstile siteKey={turnstileKey} onToken={setToken} />
 
         {status === "error" && (
           <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 text-sm text-rose-300">
