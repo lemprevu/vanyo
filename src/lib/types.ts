@@ -49,6 +49,16 @@ export type Plan = {
   position: number;
 };
 
+export const ADMIN_ROLES = ["Administrateur", "Modérateur", "Commercial"] as const;
+export type AdminRole = (typeof ADMIN_ROLES)[number];
+
+export type AdminProfile = {
+  id: string;
+  email: string | null;
+  role: AdminRole;
+  created_at: string;
+};
+
 export type SiteSettings = {
   id: number;
   site_name: string;
