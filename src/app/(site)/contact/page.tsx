@@ -4,7 +4,7 @@ import { InstagramIcon, LinkedinIcon, TwitterIcon } from "@/components/ui/Social
 import { PageHeader } from "@/components/sections/PageHeader";
 import { ContactForm } from "./ContactForm";
 import { Reveal } from "@/components/ui/Reveal";
-import { SITE } from "@/lib/site";
+import { getSiteSettings } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -12,14 +12,25 @@ export const metadata: Metadata = {
     "Contactez Vanyo pour parler de votre projet de site internet. Réponse sous quelques heures. Devis gratuit et sans engagement.",
 };
 
-const infos = [
-  { Icon: Mail, label: "Email", value: SITE.email, href: `mailto:${SITE.email}` },
-  { Icon: Phone, label: "Téléphone", value: SITE.phone, href: SITE.phoneHref },
-  { Icon: MapPin, label: "Adresse", value: SITE.address },
-  { Icon: Clock, label: "Horaires", value: SITE.hours },
-];
+export const revalidate = 60;
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const settings = await getSiteSettings();
+  const phoneHref = `tel:${settings.phone.replace(/\s+/g, "")}`;
+
+  const infos = [
+    { Icon: Mail, label: "Email", value: settings.email, href: `mailto:${settings.email}` },
+    { Icon: Phone, label: "Téléphone", value: settings.phone, href: phoneHref },
+    { Icon: MapPin, label: "Adresse", value: settings.address },
+    { Icon: Clock, label: "Horaires", value: settings.hours },
+  ];
+
+  const socials = [
+    { Icon: InstagramIcon, href: settings.instagram },
+    { Icon: LinkedinIcon, href: settings.linkedin },
+    { Icon: TwitterIcon, href: settings.twitter },
+  ].filter((s) => s.href);
+
   return (
     <>
       <PageHeader
@@ -59,14 +70,10 @@ export default function ContactPage() {
             </div>
 
             <div className="flex gap-2">
-              {[
-                { Icon: InstagramIcon, href: SITE.socials.instagram },
-                { Icon: LinkedinIcon, href: SITE.socials.linkedin },
-                { Icon: TwitterIcon, href: SITE.socials.twitter },
-              ].map(({ Icon, href }, i) => (
+              {socials.map(({ Icon, href }, i) => (
                 <a
                   key={i}
-                  href={href}
+                  href={href!}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="glass flex h-11 w-11 items-center justify-center rounded-xl text-white/70 hover:border-vanyo-500/50 hover:text-white"

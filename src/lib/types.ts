@@ -49,6 +49,21 @@ export type Plan = {
   position: number;
 };
 
+export type SiteSettings = {
+  id: number;
+  site_name: string;
+  tagline: string;
+  description: string | null;
+  email: string;
+  phone: string;
+  address: string;
+  hours: string;
+  instagram: string | null;
+  linkedin: string | null;
+  twitter: string | null;
+  dribbble: string | null;
+};
+
 export const CATEGORIES_REALISATIONS = [
   "Restaurant", "Entreprise", "Immobilier", "Association", "Commerce", "Portfolio", "Landing Page",
 ] as const;

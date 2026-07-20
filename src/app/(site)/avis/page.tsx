@@ -5,6 +5,7 @@ import { Testimonials } from "@/components/sections/Testimonials";
 import { StaggerGroup, StaggerItem } from "@/components/ui/Reveal";
 import { GlowCard } from "@/components/ui/GlowCard";
 import { getAvis } from "@/lib/data";
+import { LeaveReviewForm } from "./LeaveReviewForm";
 
 export const metadata: Metadata = {
   title: "Avis clients",
@@ -48,6 +49,9 @@ export default async function AvisPage() {
             </StaggerItem>
           ))}
         </StaggerGroup>
+      </section>
+      <section className="container-v max-w-2xl pb-24">
+        <LeaveReviewForm />
       </section>
     </>
   );

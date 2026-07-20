@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Plus, Pencil, Trash2, X, Save, Star } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Save, Star, Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Avis } from "@/lib/types";
 import { Label, Input, Textarea } from "@/components/ui/Field";
@@ -57,12 +57,21 @@ export function AvisManager({ initial, live }: { initial: Avis[]; live: boolean 
     if (supabase) await supabase.from("avis").delete().eq("id", id);
   }
 
+  async function toggleFeatured(a: Avis) {
+    setRows((prev) => prev.map((r) => (r.id === a.id ? { ...r, featured: !r.featured } : r)));
+    if (supabase) await supabase.from("avis").update({ featured: !a.featured }).eq("id", a.id);
+  }
+
+  const pending = rows.filter((a) => !a.featured).length;
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-white">Avis clients</h1>
-          <p className="mt-1 text-sm text-white/50">{rows.length} avis{!live && " · démonstration"}</p>
+          <p className="mt-1 text-sm text-white/50">
+            {rows.length} avis{pending > 0 && ` · ${pending} en attente de validation`}{!live && " · démonstration"}
+          </p>
         </div>
         <button onClick={openNew} className="btn-premium btn-primary px-5 py-2.5 text-sm">
           <Plus className="h-4 w-4" /> Ajouter un avis
@@ -71,9 +80,14 @@ export function AvisManager({ initial, live }: { initial: Avis[]; live: boolean 
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {rows.map((a) => (
-          <div key={a.id} className="gradient-border rounded-2xl bg-ink-card/60 p-5">
-            <div className="flex items-center gap-0.5 text-amber-400">
-              {Array.from({ length: a.rating }).map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-current" />)}
+          <div key={a.id} className={`gradient-border rounded-2xl bg-ink-card/60 p-5 ${!a.featured ? "ring-1 ring-amber-500/30" : ""}`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-0.5 text-amber-400">
+                {Array.from({ length: a.rating }).map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-current" />)}
+              </div>
+              {!a.featured && (
+                <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-300">En attente</span>
+              )}
             </div>
             <p className="mt-3 line-clamp-3 text-sm text-white/70">« {a.quote} »</p>
             <div className="mt-4 flex items-center justify-between">
@@ -85,6 +99,13 @@ export function AvisManager({ initial, live }: { initial: Avis[]; live: boolean 
                 </div>
               </div>
               <div className="flex gap-1.5">
+                <button
+                  onClick={() => toggleFeatured(a)}
+                  className={`glass flex h-8 w-8 items-center justify-center rounded-lg ${a.featured ? "text-emerald-300" : "text-white/70 hover:text-emerald-300"}`}
+                  title={a.featured ? "Dépublier" : "Publier"}
+                >
+                  {a.featured ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                </button>
                 <button onClick={() => openEdit(a)} className="glass flex h-8 w-8 items-center justify-center rounded-lg text-white/70 hover:text-white"><Pencil className="h-4 w-4" /></button>
                 <button onClick={() => remove(a.id)} className="glass flex h-8 w-8 items-center justify-center rounded-lg text-white/70 hover:text-rose-300"><Trash2 className="h-4 w-4" /></button>
               </div>

@@ -73,6 +73,7 @@ export type Project = {
   category: string;
   tags: string[];
   color: string; // dégradé pour le visuel
+  link?: string | null;
 };
 
 export const PROJECT_CATEGORIES = [

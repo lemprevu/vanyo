@@ -1,15 +1,16 @@
-import { Settings, Search, Palette, Mail, Shield } from "lucide-react";
+import { Search, Palette, Mail, Shield } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { PlansManager } from "./PlansManager";
-import type { Plan } from "@/lib/types";
+import { SiteSettingsForm } from "./SiteSettingsForm";
+import type { Plan, SiteSettings } from "@/lib/types";
 import { PLANS as DEMO_PLANS } from "@/lib/content";
+import { getSiteSettings } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
 const groups = [
-  { icon: Settings, title: "Général", items: ["Nom du site", "Logo & favicon", "Coordonnées", "Réseaux sociaux"] },
   { icon: Palette, title: "Apparence", items: ["Couleurs de la marque", "Typographie", "Sections de la page d'accueil"] },
-  { icon: Search, title: "SEO", items: ["Titre & description", "Mots-clés", "OpenGraph / Twitter", "robots.txt & sitemap"] },
+  { icon: Search, title: "SEO avancé", items: ["Mots-clés", "OpenGraph / Twitter", "robots.txt & sitemap"] },
   { icon: Mail, title: "Emails & SMTP", items: ["Serveur SMTP", "Email d'expédition", "Notifications"] },
   { icon: Shield, title: "Sécurité & intégrations", items: ["Google Analytics", "Meta Pixel", "reCAPTCHA / Turnstile", "Double authentification"] },
 ];
@@ -35,6 +36,7 @@ export default async function Page() {
     plans = (data as Plan[]) ?? [];
     live = true;
   }
+  const settings: SiteSettings = await getSiteSettings();
 
   return (
     <div className="space-y-6">
@@ -42,6 +44,8 @@ export default async function Page() {
         <h1 className="text-2xl font-semibold text-white">Paramètres</h1>
         <p className="mt-1 text-sm text-white/50">Configurez l'ensemble de votre site depuis un seul endroit.</p>
       </div>
+
+      <SiteSettingsForm initial={settings} live={live} />
 
       <PlansManager initial={plans} live={live} />
 

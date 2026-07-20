@@ -2,7 +2,8 @@ import Link from "next/link";
 import { Mail, Phone, MapPin, ArrowUpRight } from "lucide-react";
 import { InstagramIcon, LinkedinIcon, TwitterIcon, DribbbleIcon } from "@/components/ui/SocialIcons";
 import { Logo } from "@/components/Logo";
-import { SITE, NAV_LINKS } from "@/lib/site";
+import { NAV_LINKS } from "@/lib/site";
+import type { SiteSettings } from "@/lib/types";
 
 const services = [
   { label: "Site vitrine", href: "/creation-sites" },
@@ -12,7 +13,9 @@ const services = [
   { label: "SEO & Référencement", href: "/services" },
 ];
 
-export function Footer() {
+export function Footer({ settings }: { settings: SiteSettings }) {
+  const phoneHref = `tel:${settings.phone.replace(/\s+/g, "")}`;
+
   return (
     <footer className="relative mt-24 border-t border-white/8 bg-ink-soft">
       <div className="container-v py-16">
@@ -39,26 +42,28 @@ export function Footer() {
           <div>
             <Logo />
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/55">
-              {SITE.name} conçoit des sites internet haut de gamme, rapides et pensés
+              {settings.site_name} conçoit des sites internet haut de gamme, rapides et pensés
               pour convertir. Design, développement, SEO et accompagnement.
             </p>
             <div className="mt-5 flex gap-2">
               {[
-                { Icon: InstagramIcon, href: SITE.socials.instagram },
-                { Icon: LinkedinIcon, href: SITE.socials.linkedin },
-                { Icon: TwitterIcon, href: SITE.socials.twitter },
-                { Icon: DribbbleIcon, href: SITE.socials.dribbble },
-              ].map(({ Icon, href }, i) => (
-                <a
-                  key={i}
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="glass flex h-9 w-9 items-center justify-center rounded-lg text-white/70 transition-colors hover:border-vanyo-500/50 hover:text-white"
-                >
-                  <Icon className="h-4 w-4" />
-                </a>
-              ))}
+                { Icon: InstagramIcon, href: settings.instagram },
+                { Icon: LinkedinIcon, href: settings.linkedin },
+                { Icon: TwitterIcon, href: settings.twitter },
+                { Icon: DribbbleIcon, href: settings.dribbble },
+              ]
+                .filter((s) => s.href)
+                .map(({ Icon, href }, i) => (
+                  <a
+                    key={i}
+                    href={href!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="glass flex h-9 w-9 items-center justify-center rounded-lg text-white/70 transition-colors hover:border-vanyo-500/50 hover:text-white"
+                  >
+                    <Icon className="h-4 w-4" />
+                  </a>
+                ))}
             </div>
           </div>
 
@@ -99,15 +104,15 @@ export function Footer() {
             <ul className="mt-4 space-y-3 text-sm text-white/55">
               <li className="flex items-center gap-2.5">
                 <Mail className="h-4 w-4 text-vanyo-400" />
-                <a href={`mailto:${SITE.email}`} className="hover:text-white">{SITE.email}</a>
+                <a href={`mailto:${settings.email}`} className="hover:text-white">{settings.email}</a>
               </li>
               <li className="flex items-center gap-2.5">
                 <Phone className="h-4 w-4 text-vanyo-400" />
-                <a href={SITE.phoneHref} className="hover:text-white">{SITE.phone}</a>
+                <a href={phoneHref} className="hover:text-white">{settings.phone}</a>
               </li>
               <li className="flex items-start gap-2.5">
                 <MapPin className="mt-0.5 h-4 w-4 text-vanyo-400" />
-                <span>{SITE.address}</span>
+                <span>{settings.address}</span>
               </li>
             </ul>
             <Link
@@ -120,7 +125,7 @@ export function Footer() {
         </div>
 
         <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-white/8 pt-6 text-xs text-white/40 sm:flex-row">
-          <p>© {new Date().getFullYear()} {SITE.name}. Tous droits réservés.</p>
+          <p>© {new Date().getFullYear()} {settings.site_name}. Tous droits réservés.</p>
           <div className="flex gap-5">
             <Link href="/mentions-legales" className="hover:text-white/70">Mentions légales</Link>
             <Link href="/confidentialite" className="hover:text-white/70">Confidentialité</Link>

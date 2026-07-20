@@ -4,11 +4,12 @@
  * Supabase n'est pas configuré ou qu'une table est vide.
  */
 import { createClient } from "@/lib/supabase/server";
+import { SITE } from "@/lib/site";
 import {
   PROJECTS, ARTICLES, TESTIMONIALS, PLANS,
   type Project, type Article as StaticArticle, type Testimonial, type Plan as StaticPlan,
 } from "@/lib/content";
-import type { Realisation, Article, Avis, Plan } from "@/lib/types";
+import type { Realisation, Article, Avis, Plan, SiteSettings } from "@/lib/types";
 
 export async function getRealisations(): Promise<Project[]> {
   const supabase = await createClient();
@@ -19,7 +20,7 @@ export async function getRealisations(): Promise<Project[]> {
   if (!rows || rows.length === 0) return PROJECTS;
 
   return rows.map((r) => ({
-    slug: r.id, title: r.title, category: r.category, tags: r.tags, color: r.color,
+    slug: r.id, title: r.title, category: r.category, tags: r.tags, color: r.color, link: r.link,
   }));
 }
 
@@ -79,4 +80,29 @@ export async function getPlans(): Promise<StaticPlan[]> {
     name: p.name, price: p.price, priceNote: p.price_note ?? "", description: p.description ?? "",
     features: p.features, highlight: p.highlight,
   }));
+}
+
+/** Coordonnées et informations générales du site, éditables depuis /admin/parametres. */
+export async function getSiteSettings(): Promise<SiteSettings> {
+  const fallback: SiteSettings = {
+    id: 1,
+    site_name: SITE.name,
+    tagline: SITE.tagline,
+    description: SITE.description,
+    email: SITE.email,
+    phone: SITE.phone,
+    address: SITE.address,
+    hours: SITE.hours,
+    instagram: SITE.socials.instagram,
+    linkedin: SITE.socials.linkedin,
+    twitter: SITE.socials.twitter,
+    dribbble: SITE.socials.dribbble,
+  };
+
+  const supabase = await createClient();
+  if (!supabase) return fallback;
+
+  const { data } = await supabase.from("site_settings").select("*").eq("id", 1).maybeSingle();
+  if (!data) return fallback;
+  return data as SiteSettings;
 }
