@@ -54,9 +54,15 @@ export function DevisManager({ initial, live }: { initial: Devis[]; live: boolea
   function openDetail(d: Devis) {
     setSelected(d);
     setNote(d.note_interne ?? "");
-    if (!d.viewed) {
+    if (!d.viewed && live) {
       setRows((prev) => prev.map((r) => (r.id === d.id ? { ...r, viewed: true } : r)));
-      if (supabase) supabase.from("devis").update({ viewed: true }).eq("id", d.id);
+      // keepalive : la requête aboutit même si la page est rafraîchie juste après.
+      fetch("/api/admin/devis/mark-viewed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [d.id] }),
+        keepalive: true,
+      }).catch(() => {});
     }
   }
 

@@ -61,10 +61,17 @@ export function AdminShell({
     // notification ne réapparaisse pas à la prochaine visite.
     setUnreadCount(0);
     if (live) {
-      const supabase = createClient();
       const ids = notifs.filter((n) => n.type === "devis").map((n) => n.id);
-      if (supabase && ids.length > 0) {
-        supabase.from("devis").update({ viewed: true }).in("id", ids);
+      if (ids.length > 0) {
+        // keepalive: la requête survit même si la page est rafraîchie
+        // juste après le clic (sinon le navigateur l'annule en plein vol
+        // et la notification réapparaît au prochain chargement).
+        fetch("/api/admin/devis/mark-viewed", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids }),
+          keepalive: true,
+        }).catch(() => {});
       }
     }
   }
