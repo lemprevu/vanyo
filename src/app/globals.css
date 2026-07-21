@@ -42,7 +42,11 @@
 
 html {
   scroll-behavior: smooth;
-  overflow-x: hidden;
+  /* Important : PAS de overflow-x ici. Safari iOS casse le positionnement
+     `position: fixed` (header, menu mobile) dès que la balise <html> a une
+     valeur d'overflow autre que "visible" — les éléments fixed perdent leur
+     ancrage à la fenêtre et deviennent inaccessibles/désynchronisés une fois
+     la page scrollée. Le blocage horizontal se fait uniquement sur <body>. */
 }
 
 body {
@@ -53,6 +57,7 @@ body {
   overflow-x: hidden;
   width: 100%;
   max-width: 100%;
+  position: relative;
 }
 
 /* Curseur personnalisé : on masque le curseur natif sur desktop */
