@@ -9,10 +9,13 @@ import {
   Settings, Bell, LogOut, Menu, X, Search, Star, Users, Mail, Ticket,
 } from "lucide-react";
 import { RotateCcw } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { LogoMark } from "@/components/Logo";
 import { createClient } from "@/lib/supabase/client";
 
-const NAV = [
+type NavItem = { label: string; seg: string; icon: LucideIcon; key?: string; badge?: number };
+
+const NAV: NavItem[] = [
   { label: "Dashboard", seg: "", icon: LayoutDashboard },
   { label: "Devis", seg: "/devis", icon: FileText, key: "devis" },
   { label: "Messages", seg: "/messages", icon: MessageSquare, key: "messages" },
@@ -37,6 +40,7 @@ export function AdminShell({
   onReset,
   basePath = "/admin",
   brandName = "Van",
+  navItems,
 }: {
   children: React.ReactNode;
   email: string;
@@ -47,7 +51,9 @@ export function AdminShell({
   onReset?: () => void;
   basePath?: string;
   brandName?: string;
+  navItems?: NavItem[];
 }) {
+  const nav = navItems ?? NAV;
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -57,7 +63,8 @@ export function AdminShell({
   const [seenCount, setSeenCount] = useState(0);
   const unreadCount = Math.max(0, notifications.length - seenCount);
 
-  const notifHref = (type: string) => `${basePath}${type === "devis" ? "/devis" : "/messages"}`;
+  // En admin le type vaut "devis" ; en démo métier c'est l'id de la section.
+  const notifHref = (type: string) => `${basePath}/${type}`;
 
   async function logout() {
     if (demoMode) {
@@ -93,8 +100,10 @@ export function AdminShell({
     }
   }
 
-  const badge = (key?: string) =>
-    key === "devis" ? counts.devis : key === "messages" ? counts.messages : 0;
+  const badge = (item: NavItem) =>
+    item.badge !== undefined
+      ? item.badge
+      : item.key === "devis" ? counts.devis : item.key === "messages" ? counts.messages : 0;
 
   const Sidebar = (
     <div className="flex h-full flex-col">
@@ -110,10 +119,10 @@ export function AdminShell({
         </span>
       </div>
       <nav className="flex-1 space-y-1 px-3 py-2">
-        {NAV.map((item) => {
+        {nav.map((item) => {
           const href = `${basePath}${item.seg}`;
           const active = pathname === href;
-          const b = badge(item.key);
+          const b = badge(item);
           return (
             <Link
               key={href}

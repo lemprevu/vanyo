@@ -19,7 +19,7 @@ export function DemoCallout() {
       <SectionHeading
         eyebrow="Panel client"
         title={<>Gérez votre site <span className="text-gradient-violet">vous-même</span></>}
-        subtitle="Chaque site Vanyo est livré avec un espace d'administration simple et puissant. Testez-le dès maintenant, sans inscription."
+        subtitle="Chaque site Vanyo est livré avec un espace d'administration simple et puissant, adapté à votre métier. Choisissez votre secteur et testez-le, sans inscription."
       />
 
       <div className="mt-12 grid items-center gap-8 lg:grid-cols-2">
@@ -39,11 +39,11 @@ export function DemoCallout() {
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Link href="/demo" className="btn-premium btn-primary px-6 py-3.5 text-sm">
-                Essayer le panel en démo
+                Choisir mon secteur & tester
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <span className="text-xs text-white/45">
-                Démo interactive · aucune donnée réelle · rien à installer
+                8 métiers · aucune donnée réelle · rien à installer
               </span>
             </div>
           </div>
