@@ -70,12 +70,6 @@ export function Navbar() {
           >
             {theme === "dark" ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
           </button>
-          <Link
-            href="/demo"
-            className="glass rounded-xl px-4 py-2.5 text-sm text-white/75 transition-colors hover:text-white"
-          >
-            Démo panel
-          </Link>
           <Magnetic strength={0.4}>
             <Link
               href="/devis"
@@ -128,14 +122,8 @@ export function Navbar() {
                 </Link>
               ))}
               <Link
-                href="/demo"
-                className="mt-2 rounded-xl border border-white/10 px-4 py-3 text-center text-sm text-white/75 transition-colors hover:bg-white/5 hover:text-white"
-              >
-                Démo du panel client
-              </Link>
-              <Link
                 href="/devis"
-                className="btn-premium btn-primary mt-1 px-5 py-3 text-sm"
+                className="btn-premium btn-primary mt-2 px-5 py-3 text-sm"
               >
                 Demander un devis
                 <ArrowRight className="h-4 w-4" />

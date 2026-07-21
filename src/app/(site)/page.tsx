@@ -4,6 +4,7 @@ import { LogosMarquee } from "@/components/sections/LogosMarquee";
 import { ServicesSection } from "@/components/sections/ServicesSection";
 import { WhySection } from "@/components/sections/WhySection";
 import { ProcessSection } from "@/components/sections/ProcessSection";
+import { DemoCallout } from "@/components/sections/DemoCallout";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Gallery } from "@/components/sections/Gallery";
 import { PricingWithPromo } from "@/components/sections/PricingWithPromo";
@@ -28,6 +29,9 @@ export default async function HomePage() {
       {on("logos") && <LogosMarquee />}
       {on("services") && <ServicesSection limit={6} />}
       {on("why") && <WhySection limit={6} />}
+
+      <DemoCallout />
+
       {on("process") && <ProcessSection />}
 
       {on("realisations") && (
