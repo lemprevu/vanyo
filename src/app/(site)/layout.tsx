@@ -4,7 +4,6 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { CustomCursor } from "@/components/fx/CustomCursor";
 import { ScrollProgress } from "@/components/fx/ScrollProgress";
-import { LoadingScreen } from "@/components/fx/LoadingScreen";
 import { AuroraBackground, MouseGlow } from "@/components/fx/Backgrounds";
 import { SiteRuntime } from "@/components/SiteRuntime";
 import { getSiteSettings } from "@/lib/data";
@@ -48,7 +47,6 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
   return (
     <>
       <SiteRuntime settings={settings} />
-      <LoadingScreen />
       <AuroraBackground />
       <MouseGlow />
       <ScrollProgress />
