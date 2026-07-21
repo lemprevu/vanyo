@@ -12,7 +12,29 @@ type Factor = { id: string; status: string };
  * Permet d'activer une appli d'authentification (Google Authenticator,
  * Authy…) comme second facteur de connexion, et de la désactiver.
  */
-export function TwoFactorSetup({ live }: { live: boolean }) {
+// QR code factice (SVG data-URI) pour la démonstration.
+const DEMO_QR =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 9 9' shape-rendering='crispEdges'>` +
+      `<rect width='9' height='9' fill='white'/>` +
+      [
+        "111111010101", "100001011001", "101101010011", "101101001101",
+        "101101010101", "100001011011", "111111010101", "000000001001",
+        "110101101101",
+      ]
+        .map((row, y) =>
+          row
+            .slice(0, 9)
+            .split("")
+            .map((c, x) => (c === "1" ? `<rect x='${x}' y='${y}' width='1' height='1' fill='black'/>` : ""))
+            .join("")
+        )
+        .join("") +
+      `</svg>`
+  );
+
+export function TwoFactorSetup({ live, demo = false }: { live: boolean; demo?: boolean }) {
   const supabase = live ? createClient() : null;
   const [loading, setLoading] = useState(true);
   const [factor, setFactor] = useState<Factor | null>(null);
@@ -22,15 +44,21 @@ export function TwoFactorSetup({ live }: { live: boolean }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (demo) { setLoading(false); return; }
     if (!supabase) { setLoading(false); return; }
     supabase.auth.mfa.listFactors().then(({ data }) => {
       const verified = data?.totp?.find((f) => f.status === "verified");
       setFactor(verified ? { id: verified.id, status: verified.status } : null);
       setLoading(false);
     });
-  }, [supabase]);
+  }, [supabase, demo]);
 
   async function startEnroll() {
+    if (demo) {
+      setError("");
+      setEnrolling({ id: "demo", qr: DEMO_QR, secret: "JBSWY3DPEHPK3PXP" });
+      return;
+    }
     if (!supabase) return;
     setBusy(true); setError("");
     const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp" });
@@ -40,7 +68,15 @@ export function TwoFactorSetup({ live }: { live: boolean }) {
   }
 
   async function verify() {
-    if (!supabase || !enrolling) return;
+    if (!enrolling) return;
+    if (demo) {
+      // Démonstration : n'importe quel code à 6 chiffres est accepté.
+      setFactor({ id: "demo", status: "verified" });
+      setEnrolling(null);
+      setCode("");
+      return;
+    }
+    if (!supabase) return;
     setBusy(true); setError("");
     const { data: challenge, error: cErr } = await supabase.auth.mfa.challenge({ factorId: enrolling.id });
     if (cErr || !challenge) { setBusy(false); setError(cErr?.message || "Erreur"); return; }
@@ -55,15 +91,17 @@ export function TwoFactorSetup({ live }: { live: boolean }) {
   }
 
   async function disable() {
-    if (!supabase || !factor) return;
+    if (!factor) return;
     if (!confirm("Désactiver la double authentification ?")) return;
+    if (demo) { setFactor(null); return; }
+    if (!supabase) return;
     setBusy(true);
     await supabase.auth.mfa.unenroll({ factorId: factor.id });
     setBusy(false);
     setFactor(null);
   }
 
-  if (!live) {
+  if (!live && !demo) {
     return (
       <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200">
         La double authentification nécessite Supabase configuré (mode démonstration ici).

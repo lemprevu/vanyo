@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
   Save, CheckCircle2, Loader2, Settings2, Palette, Search, Plug, Mail, Shield, Send, Megaphone,
@@ -22,7 +22,7 @@ const TABS = [
   { key: "securite", label: "Sécurité", icon: Shield },
 ] as const;
 
-export function SettingsTabs({ initial, live }: { initial: SiteSettingsFull; live: boolean }) {
+export function SettingsTabs({ initial, live, onChange }: { initial: SiteSettingsFull; live: boolean; onChange?: (v: SiteSettingsFull) => void }) {
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("general");
   const [v, setV] = useState<SiteSettingsFull>(initial);
   const [saving, setSaving] = useState(false);
@@ -35,6 +35,11 @@ export function SettingsTabs({ initial, live }: { initial: SiteSettingsFull; liv
   );
 
   const supabase = live ? createClient() : null;
+  const demo = !live && !!onChange;
+
+  // Mode démo : chaque modification est remontée en direct (persistance +
+  // aperçu live de la couleur/du nom dans le panel).
+  useEffect(() => { onChange?.(v); }, [v]); // eslint-disable-line react-hooks/exhaustive-deps
   const set = <K extends keyof SiteSettingsFull>(k: K, val: SiteSettingsFull[K]) =>
     setV((prev) => ({ ...prev, [k]: val }));
   const field = (k: keyof SiteSettingsFull) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
@@ -63,6 +68,12 @@ export function SettingsTabs({ initial, live }: { initial: SiteSettingsFull; liv
     setSmtpTest("loading"); setSmtpMsg("");
     // On enregistre d'abord pour que le test utilise les valeurs à l'écran.
     await save();
+    if (demo) {
+      // Démonstration : on simule un envoi réussi sans appel réseau.
+      setSmtpTest("ok");
+      setSmtpMsg("Email de test envoyé ! (simulation — démonstration)");
+      return;
+    }
     const res = await fetch("/api/admin/smtp-test", { method: "POST" });
     const data = await res.json().catch(() => ({}));
     if (res.ok) { setSmtpTest("ok"); setSmtpMsg("Email de test envoyé ! Vérifiez votre boîte."); }
@@ -297,7 +308,7 @@ export function SettingsTabs({ initial, live }: { initial: SiteSettingsFull; liv
         {tab === "securite" && (
           <div className="space-y-4">
             <p className="text-sm text-white/50">Protégez votre compte administrateur avec une seconde vérification.</p>
-            <TwoFactorSetup live={live} />
+            <TwoFactorSetup live={live} demo={demo} />
           </div>
         )}
       </div>

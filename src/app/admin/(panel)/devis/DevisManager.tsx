@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
   Search, Eye, Trash2, X, Mail, Phone, MapPin, Building2,
@@ -9,7 +9,7 @@ import {
 import { DEVIS_STATUSES, STATUS_STYLES, type Devis, type DevisStatus } from "@/lib/devis";
 import { createClient } from "@/lib/supabase/client";
 
-export function DevisManager({ initial, live }: { initial: Devis[]; live: boolean }) {
+export function DevisManager({ initial, live, onChange }: { initial: Devis[]; live: boolean; onChange?: (rows: Devis[]) => void }) {
   const [rows, setRows] = useState<Devis[]>(initial);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"Tous" | DevisStatus>("Tous");
@@ -18,6 +18,9 @@ export function DevisManager({ initial, live }: { initial: Devis[]; live: boolea
   const [saving, setSaving] = useState(false);
 
   const supabase = live ? createClient() : null;
+  const demo = !live && !!onChange;
+
+  useEffect(() => { onChange?.(rows); }, [rows]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = useMemo(() => {
     return rows.filter((d) => {
@@ -54,15 +57,17 @@ export function DevisManager({ initial, live }: { initial: Devis[]; live: boolea
   function openDetail(d: Devis) {
     setSelected(d);
     setNote(d.note_interne ?? "");
-    if (!d.viewed && live) {
+    if (!d.viewed && (live || demo)) {
       setRows((prev) => prev.map((r) => (r.id === d.id ? { ...r, viewed: true } : r)));
       // keepalive : la requête aboutit même si la page est rafraîchie juste après.
-      fetch("/api/admin/devis/mark-viewed", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: [d.id] }),
-        keepalive: true,
-      }).catch(() => {});
+      if (live) {
+        fetch("/api/admin/devis/mark-viewed", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: [d.id] }),
+          keepalive: true,
+        }).catch(() => {});
+      }
     }
   }
 

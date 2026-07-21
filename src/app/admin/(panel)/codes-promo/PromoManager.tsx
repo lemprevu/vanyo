@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Plus, Pencil, Trash2, X, Save, Ticket, Power } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -11,13 +11,15 @@ const empty: Omit<PromoCode, "id" | "created_at"> = {
   code: "", description: "", discount_type: "percent", discount_value: 10, active: true, expires_at: null,
 };
 
-export function PromoManager({ initial, live }: { initial: PromoCode[]; live: boolean }) {
+export function PromoManager({ initial, live, onChange }: { initial: PromoCode[]; live: boolean; onChange?: (rows: PromoCode[]) => void }) {
   const [rows, setRows] = useState<PromoCode[]>(initial);
   const [editing, setEditing] = useState<PromoCode | null>(null);
   const [draft, setDraft] = useState(empty);
   const [formOpen, setFormOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const supabase = live ? createClient() : null;
+
+  useEffect(() => { onChange?.(rows); }, [rows]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function openNew() { setEditing(null); setDraft(empty); setFormOpen(true); }
   function openEdit(p: PromoCode) { setEditing(p); setDraft(p); setFormOpen(true); }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Plus, Pencil, Trash2, X, Save, Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -19,13 +19,15 @@ const empty: Omit<Article, "id" | "created_at"> = {
   published_at: new Date().toISOString().slice(0, 10),
 };
 
-export function ArticlesManager({ initial, live }: { initial: Article[]; live: boolean }) {
+export function ArticlesManager({ initial, live, onChange }: { initial: Article[]; live: boolean; onChange?: (rows: Article[]) => void }) {
   const [rows, setRows] = useState<Article[]>(initial);
   const [editing, setEditing] = useState<Article | null>(null);
   const [draft, setDraft] = useState(empty);
   const [formOpen, setFormOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const supabase = live ? createClient() : null;
+
+  useEffect(() => { onChange?.(rows); }, [rows]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function openNew() {
     setEditing(null);

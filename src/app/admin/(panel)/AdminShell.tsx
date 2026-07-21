@@ -8,20 +8,21 @@ import {
   LayoutDashboard, FileText, MessageSquare, Image as ImageIcon, Newspaper,
   Settings, Bell, LogOut, Menu, X, Search, Star, Users, Mail, Ticket,
 } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import { LogoMark } from "@/components/Logo";
 import { createClient } from "@/lib/supabase/client";
 
 const NAV = [
-  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { label: "Devis", href: "/admin/devis", icon: FileText, key: "devis" },
-  { label: "Messages", href: "/admin/messages", icon: MessageSquare, key: "messages" },
-  { label: "Réalisations", href: "/admin/realisations", icon: ImageIcon },
-  { label: "Blog", href: "/admin/blog", icon: Newspaper },
-  { label: "Avis", href: "/admin/avis", icon: Star },
-  { label: "Codes promo", href: "/admin/codes-promo", icon: Ticket },
-  { label: "Utilisateurs", href: "/admin/utilisateurs", icon: Users },
-  { label: "Signature email", href: "/admin/signature", icon: Mail },
-  { label: "Paramètres", href: "/admin/parametres", icon: Settings },
+  { label: "Dashboard", seg: "", icon: LayoutDashboard },
+  { label: "Devis", seg: "/devis", icon: FileText, key: "devis" },
+  { label: "Messages", seg: "/messages", icon: MessageSquare, key: "messages" },
+  { label: "Réalisations", seg: "/realisations", icon: ImageIcon },
+  { label: "Blog", seg: "/blog", icon: Newspaper },
+  { label: "Avis", seg: "/avis", icon: Star },
+  { label: "Codes promo", seg: "/codes-promo", icon: Ticket },
+  { label: "Utilisateurs", seg: "/utilisateurs", icon: Users },
+  { label: "Signature email", seg: "/signature", icon: Mail },
+  { label: "Paramètres", seg: "/parametres", icon: Settings },
 ];
 
 type Notif = { id: string; type: string; text: string; time: string };
@@ -32,22 +33,37 @@ export function AdminShell({
   live,
   counts,
   notifications,
+  demoMode = false,
+  onReset,
+  basePath = "/admin",
+  brandName = "Van",
 }: {
   children: React.ReactNode;
   email: string;
   live: boolean;
   counts: { devis: number; messages: number };
   notifications: Notif[];
+  demoMode?: boolean;
+  onReset?: () => void;
+  basePath?: string;
+  brandName?: string;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
-  // Copie locale : on peut la vider dès l'ouverture sans attendre un rechargement serveur.
-  const [notifs, setNotifs] = useState(notifications);
-  const [unreadCount, setUnreadCount] = useState(notifications.length);
+  // Nombre de notifications déjà « vues » : au-delà, le badge s'efface.
+  // Dérivé plutôt que copié, pour rester juste quand la liste évolue (démo).
+  const [seenCount, setSeenCount] = useState(0);
+  const unreadCount = Math.max(0, notifications.length - seenCount);
+
+  const notifHref = (type: string) => `${basePath}${type === "devis" ? "/devis" : "/messages"}`;
 
   async function logout() {
+    if (demoMode) {
+      router.push("/");
+      return;
+    }
     const supabase = createClient();
     await supabase?.auth.signOut();
     router.push("/admin/login");
@@ -60,9 +76,9 @@ export function AdminShell({
     // On marque comme lues : le badge disparaît immédiatement, la liste
     // reste visible le temps de la lecture. Persisté en base pour que la
     // notification ne réapparaisse pas à la prochaine visite.
-    setUnreadCount(0);
+    setSeenCount(notifications.length);
     if (live) {
-      const ids = notifs.filter((n) => n.type === "devis").map((n) => n.id);
+      const ids = notifications.filter((n) => n.type === "devis").map((n) => n.id);
       if (ids.length > 0) {
         // keepalive: la requête survit même si la page est rafraîchie
         // juste après le clic (sinon le navigateur l'annule en plein vol
@@ -85,18 +101,23 @@ export function AdminShell({
       <div className="flex items-center gap-2.5 px-5 py-5">
         <LogoMark size={30} />
         <span className="text-lg font-semibold text-white">
-          Van<span className="text-gradient-violet">yo</span>
+          {demoMode ? (
+            <>{brandName}</>
+          ) : (
+            <>Van<span className="text-gradient-violet">yo</span></>
+          )}
           <span className="ml-1 text-xs font-normal text-white/40">admin</span>
         </span>
       </div>
       <nav className="flex-1 space-y-1 px-3 py-2">
         {NAV.map((item) => {
-          const active = pathname === item.href;
+          const href = `${basePath}${item.seg}`;
+          const active = pathname === href;
           const b = badge(item.key);
           return (
             <Link
-              key={item.href}
-              href={item.href}
+              key={href}
+              href={href}
               onClick={() => setOpen(false)}
               className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm transition-colors ${
                 active ? "bg-vanyo-500/15 text-white ring-1 ring-vanyo-500/30" : "text-white/55 hover:bg-white/5 hover:text-white"
@@ -123,11 +144,19 @@ export function AdminShell({
             <div className="text-xs text-emerald-400">Administrateur</div>
           </div>
         </div>
+        {demoMode && onReset && (
+          <button
+            onClick={onReset}
+            className="mt-1 flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm text-white/55 transition-colors hover:bg-white/5 hover:text-white"
+          >
+            <RotateCcw className="h-[18px] w-[18px]" /> Réinitialiser la démo
+          </button>
+        )}
         <button
           onClick={logout}
           className="mt-1 flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm text-white/55 transition-colors hover:bg-rose-500/10 hover:text-rose-300"
         >
-          <LogOut className="h-[18px] w-[18px]" /> Déconnexion
+          <LogOut className="h-[18px] w-[18px]" /> {demoMode ? "Quitter la démo" : "Déconnexion"}
         </button>
       </div>
     </div>
@@ -198,16 +227,16 @@ export function AdminShell({
                   >
                     <div className="flex items-center justify-between px-3 py-2">
                       <span className="text-sm font-semibold text-white">Notifications</span>
-                      <span className="text-xs text-white/40">{notifs.length} récentes</span>
+                      <span className="text-xs text-white/40">{notifications.length} récentes</span>
                     </div>
                     <div className="max-h-80 space-y-1 overflow-y-auto">
-                      {notifs.length === 0 && (
+                      {notifications.length === 0 && (
                         <p className="px-3 py-6 text-center text-sm text-white/40">Aucune notification.</p>
                       )}
-                      {notifs.map((n) => (
+                      {notifications.map((n) => (
                         <Link
                           key={n.id}
-                          href={n.type === "devis" ? "/admin/devis" : "/admin/messages"}
+                          href={notifHref(n.type)}
                           onClick={() => setNotifOpen(false)}
                           className="flex gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5"
                         >
@@ -223,11 +252,35 @@ export function AdminShell({
                 )}
               </AnimatePresence>
             </div>
-            <Link href="/" className="glass hidden rounded-xl px-4 py-2 text-sm text-white/70 hover:text-white sm:block">
-              Voir le site
-            </Link>
+            {demoMode ? (
+              <Link href="/" className="glass hidden rounded-xl px-4 py-2 text-sm text-white/70 hover:text-white sm:block">
+                Retour au site
+              </Link>
+            ) : (
+              <>
+                <Link href="/demo" className="glass hidden rounded-xl px-4 py-2 text-sm text-white/70 hover:text-white sm:block">
+                  Démo client
+                </Link>
+                <Link href="/" className="glass hidden rounded-xl px-4 py-2 text-sm text-white/70 hover:text-white sm:block">
+                  Voir le site
+                </Link>
+              </>
+            )}
           </div>
         </header>
+
+        {demoMode && (
+          <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 border-b border-vanyo-500/20 bg-vanyo-500/10 px-4 py-2 text-center text-xs text-white/70">
+            <span>
+              <strong className="font-semibold text-white">Démonstration interactive</strong> — testez librement, vos modifications restent privées (dans votre navigateur).
+            </span>
+            {onReset && (
+              <button onClick={onReset} className="font-medium text-vanyo-200 underline-offset-2 hover:underline">
+                Tout réinitialiser
+              </button>
+            )}
+          </div>
+        )}
 
         <main className="flex-1 p-4 sm:p-6">{children}</main>
       </div>

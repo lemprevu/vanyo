@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Plus, Trash2, X, Save, ShieldCheck, Loader2 } from "lucide-react";
 import type { AdminProfile, AdminRole } from "@/lib/types";
@@ -13,7 +13,7 @@ const ROLE_STYLES: Record<AdminRole, string> = {
   Commercial: "bg-emerald-500/15 text-emerald-300 border-emerald-500/40",
 };
 
-export function UsersManager({ initial, currentUserId, live }: { initial: AdminProfile[]; currentUserId: string; live: boolean }) {
+export function UsersManager({ initial, currentUserId, live, onChange }: { initial: AdminProfile[]; currentUserId: string; live: boolean; onChange?: (rows: AdminProfile[]) => void }) {
   const [rows, setRows] = useState(initial);
   const [formOpen, setFormOpen] = useState(false);
   const [email, setEmail] = useState("");
@@ -22,18 +22,26 @@ export function UsersManager({ initial, currentUserId, live }: { initial: AdminP
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  const demo = !live && !!onChange;
+  useEffect(() => { onChange?.(rows); }, [rows]); // eslint-disable-line react-hooks/exhaustive-deps
+
   async function createUser() {
     setSaving(true);
     setError("");
     try {
-      const res = await fetch("/api/admin/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, role }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Erreur lors de la création.");
-      setRows((prev) => [{ id: data.id, email, role, created_at: new Date().toISOString() }, ...prev]);
+      if (demo) {
+        // Mode démonstration : aucun appel réseau, on ajoute localement.
+        setRows((prev) => [{ id: crypto.randomUUID(), email, role, created_at: new Date().toISOString() }, ...prev]);
+      } else {
+        const res = await fetch("/api/admin/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, role }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Erreur lors de la création.");
+        setRows((prev) => [{ id: data.id, email, role, created_at: new Date().toISOString() }, ...prev]);
+      }
       setFormOpen(false);
       setEmail("");
       setPassword("");
@@ -47,6 +55,7 @@ export function UsersManager({ initial, currentUserId, live }: { initial: AdminP
 
   async function updateRole(id: string, newRole: AdminRole) {
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, role: newRole } : r)));
+    if (demo) return;
     await fetch(`/api/admin/users/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -57,6 +66,7 @@ export function UsersManager({ initial, currentUserId, live }: { initial: AdminP
   async function remove(id: string) {
     if (!confirm("Supprimer définitivement cet accès administrateur ?")) return;
     setRows((prev) => prev.filter((r) => r.id !== id));
+    if (demo) return;
     await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
   }
 

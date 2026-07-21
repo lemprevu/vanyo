@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Plus, Pencil, Trash2, X, Save } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -12,13 +12,16 @@ const empty: Omit<Realisation, "id" | "created_at"> = {
   title: "", category: CATEGORIES_REALISATIONS[0], tags: [], color: COLOR_PRESETS[0].value, link: "", position: 0,
 };
 
-export function RealisationsManager({ initial, live }: { initial: Realisation[]; live: boolean }) {
+export function RealisationsManager({ initial, live, onChange }: { initial: Realisation[]; live: boolean; onChange?: (rows: Realisation[]) => void }) {
   const [rows, setRows] = useState<Realisation[]>(initial);
   const [editing, setEditing] = useState<Realisation | null>(null);
   const [draft, setDraft] = useState(empty);
   const [tagsInput, setTagsInput] = useState("");
   const [saving, setSaving] = useState(false);
   const supabase = live ? createClient() : null;
+
+  // Mode démo : chaque changement local est remonté pour persistance.
+  useEffect(() => { onChange?.(rows); }, [rows]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function openNew() {
     setEditing(null);

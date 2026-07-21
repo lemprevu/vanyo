@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Plus, Pencil, Trash2, X, Save, Star, Tag } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -12,7 +12,7 @@ const empty: Omit<Plan, "id" | "created_at"> = {
   name: "", price: "", original_price: "", price_note: "à partir de", description: "", features: [], highlight: false, position: 0,
 };
 
-export function PlansManager({ initial, live }: { initial: Plan[]; live: boolean }) {
+export function PlansManager({ initial, live, onChange }: { initial: Plan[]; live: boolean; onChange?: (rows: Plan[]) => void }) {
   const [rows, setRows] = useState<Plan[]>(initial);
   const [editing, setEditing] = useState<Plan | null>(null);
   const [draft, setDraft] = useState(empty);
@@ -20,6 +20,8 @@ export function PlansManager({ initial, live }: { initial: Plan[]; live: boolean
   const [formOpen, setFormOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const supabase = live ? createClient() : null;
+
+  useEffect(() => { onChange?.(rows); }, [rows]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function openNew() {
     setEditing(null);
