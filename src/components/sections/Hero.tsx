@@ -1,60 +1,48 @@
-"use client";
-
-import { motion } from "motion/react";
 import { ArrowRight, Sparkles, Star } from "lucide-react";
 import { BrowserMockup } from "./BrowserMockup";
 import { Magnetic } from "@/components/ui/Magnetic";
 import Link from "next/link";
 
-const words = "Votre présence en ligne mérite bien plus qu'un simple site.".split(" ");
-
+/**
+ * Hero. Les apparitions utilisent des classes CSS pures (voir `.reveal-css`
+ * dans globals.css), pas Framer Motion : sur Safari iOS, les animations
+ * pilotées en JS peuvent rester bloquées à l'état invisible et casser le
+ * contenu au-dessus de la ligne de flottaison. Le CSS déclaratif garantit
+ * que le contenu reste visible même si l'animation elle-même a un souci.
+ */
 export function Hero() {
   return (
     <section className="relative overflow-hidden">
       <div className="container-v grid items-center gap-14 py-10 lg:grid-cols-[1.05fr_1fr] lg:py-20">
         {/* Colonne gauche */}
         <div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 rounded-full border border-vanyo-500/30 bg-vanyo-500/10 px-4 py-1.5 text-xs font-medium text-vanyo-200"
+          <div
+            className="reveal-css inline-flex items-center gap-2 rounded-full border border-vanyo-500/30 bg-vanyo-500/10 px-4 py-1.5 text-xs font-medium text-vanyo-200"
+            style={{ animationDelay: "0.05s" }}
           >
             <Sparkles className="h-3.5 w-3.5" />
             Agence web premium · Sites qui convertissent
-          </motion.div>
+          </div>
 
-          <h1 className="mt-6 text-balance text-4xl font-semibold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
-            {words.map((w, i) => (
-              <motion.span
-                key={i}
-                initial={{ opacity: 0, y: 24, filter: "blur(6px)" }}
-                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                transition={{ delay: 0.15 + i * 0.06, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                className={`mr-[0.28em] inline-block ${
-                  w === "simple" || w === "site." ? "text-gradient-violet" : ""
-                }`}
-              >
-                {w}
-              </motion.span>
-            ))}
+          <h1
+            className="reveal-css mt-6 text-balance text-4xl font-semibold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl"
+            style={{ animationDelay: "0.12s" }}
+          >
+            Votre présence en ligne mérite bien plus qu&apos;un{" "}
+            <span className="text-gradient-violet">simple site.</span>
           </h1>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7, duration: 0.6 }}
-            className="mt-6 max-w-xl text-pretty text-lg leading-relaxed text-white/60"
+          <p
+            className="reveal-css mt-6 max-w-xl text-pretty text-lg leading-relaxed text-white/60"
+            style={{ animationDelay: "0.22s" }}
           >
             Nous concevons des sites internet modernes, rapides et pensés pour
             convertir vos visiteurs en clients.
-          </motion.p>
+          </p>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.85, duration: 0.6 }}
-            className="mt-9 flex flex-wrap items-center gap-3"
+          <div
+            className="reveal-css mt-9 flex flex-wrap items-center gap-3"
+            style={{ animationDelay: "0.3s" }}
           >
             <Magnetic strength={0.4}>
               <Link href="/devis" className="btn-premium btn-primary px-7 py-3.5 text-[0.98rem]">
@@ -65,13 +53,11 @@ export function Hero() {
             <Link href="/realisations" className="btn-premium btn-ghost px-7 py-3.5 text-[0.98rem]">
               Voir nos réalisations
             </Link>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.05 }}
-            className="mt-9 flex items-center gap-4"
+          <div
+            className="reveal-css mt-9 flex items-center gap-4"
+            style={{ animationDelay: "0.38s" }}
           >
             <div className="flex -space-x-2.5">
               {["CL", "TN", "SB", "JM"].map((n) => (
@@ -91,11 +77,11 @@ export function Hero() {
               </div>
               <p className="text-xs text-white/50">180+ clients accompagnés</p>
             </div>
-          </motion.div>
+          </div>
         </div>
 
         {/* Colonne droite : maquette */}
-        <div className="relative">
+        <div className="relative reveal-css" style={{ animationDelay: "0.15s" }}>
           <BrowserMockup />
         </div>
       </div>

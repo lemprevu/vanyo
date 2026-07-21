@@ -63,9 +63,9 @@ export function Gallery({
               <motion.article
                 key={p.slug}
                 layout
-                initial={{ opacity: 0, scale: 0.92 }}
+                initial={{ opacity: 0.5, scale: 0.92 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.92 }}
+                exit={{ opacity: 0.5, scale: 0.92 }}
                 transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                 className="group gradient-border overflow-hidden rounded-2xl bg-ink-card/70"
               >

@@ -29,7 +29,9 @@ export function ProcessSection() {
           {PROCESS.map((p, i) => (
             <motion.div
               key={p.step}
-              initial={{ opacity: 0, x: i % 2 === 0 ? -30 : 30 }}
+              // opacity jamais à 0 : une animation Safari bloquée à son état
+              // initial ne doit jamais rendre le contenu totalement invisible.
+              initial={{ opacity: 0.5, x: i % 2 === 0 ? -30 : 30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}

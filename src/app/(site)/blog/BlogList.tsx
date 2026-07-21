@@ -57,9 +57,9 @@ export function BlogList({ articles = ARTICLES }: { articles?: Article[] }) {
             <motion.article
               key={a.slug}
               layout
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0.5, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
+              exit={{ opacity: 0.5, scale: 0.95 }}
               transition={{ duration: 0.4 }}
             >
               <Link

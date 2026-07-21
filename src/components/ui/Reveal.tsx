@@ -7,8 +7,14 @@ type Direction = "up" | "down" | "left" | "right" | "fade" | "zoom";
 
 const offset = 36;
 
+// Important : l'état "hidden" ne descend jamais à opacity 0. Sur Safari iOS,
+// une animation Framer Motion peut occasionnellement rester bloquée à son
+// état initial (bug WebKit avec les animations pilotées en JS) — si cet
+// état initial est invisible, le contenu disparaît alors définitivement.
+// En restant à une opacité minimale de 0.5, le pire cas reste un contenu
+// un peu estompé mais toujours lisible, jamais un vide complet.
 const buildVariants = (direction: Direction): Variants => {
-  const hidden: Record<string, number> = { opacity: 0 };
+  const hidden: Record<string, number> = { opacity: 0.5 };
   if (direction === "up") hidden.y = offset;
   if (direction === "down") hidden.y = -offset;
   if (direction === "left") hidden.x = offset;

@@ -1,17 +1,16 @@
-"use client";
-
-import { motion } from "motion/react";
 import type { ReactNode } from "react";
 
-/** Transition d'entrée entre les pages du site public. */
+/**
+ * Transition d'entrée entre les pages du site public.
+ *
+ * Volontairement en CSS pur (classe `.reveal-css`, définie dans
+ * globals.css), pas en Framer Motion : ce wrapper englobe la TOTALITÉ du
+ * contenu de chaque page. Une animation JS (Web Animations API) qui reste
+ * bloquée à son état initial ici rendrait la page entière invisible — bug
+ * observé sur Safari iOS. Une animation CSS déclarative garantit que le
+ * contenu final (visible) est toujours celui défini par la feuille de
+ * style, indépendamment de l'exécution JS.
+ */
 export default function Template({ children }: { children: ReactNode }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 18, scale: 0.99, filter: "blur(4px)" }}
-      animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
-      transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-    >
-      {children}
-    </motion.div>
-  );
+  return <div className="reveal-css">{children}</div>;
 }

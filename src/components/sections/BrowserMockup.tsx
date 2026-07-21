@@ -5,16 +5,16 @@ import { motion } from "motion/react";
 /**
  * Maquette animée d'un navigateur affichant un « beau site web ».
  * 100% CSS/SVG, aucune image externe — reste net et rapide.
+ *
+ * L'apparition d'ensemble est gérée par le parent (classe CSS `.reveal-css`
+ * dans Hero.tsx), pas ici : les animations Framer Motion à base d'un état
+ * "initial" invisible peuvent occasionnellement rester bloquées sur Safari
+ * iOS. Seules les animations infinies (flottement, pulsation) restent en
+ * Framer Motion : elles démarrent toujours visibles, donc sans risque.
  */
 export function BrowserMockup() {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 40, rotateX: 12 }}
-      animate={{ opacity: 1, y: 0, rotateX: 0 }}
-      transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
-      style={{ transformStyle: "preserve-3d", perspective: 1200 }}
-      className="relative"
-    >
+    <div style={{ transformStyle: "preserve-3d", perspective: 1200 }} className="relative">
       {/* Halo */}
       <div className="pointer-events-none absolute -inset-10 -z-10 rounded-full bg-vanyo-500/20 blur-[90px]" />
 
@@ -48,12 +48,7 @@ export function BrowserMockup() {
           {/* hero fictif */}
           <div className="grid gap-5 sm:grid-cols-2 sm:items-center">
             <div>
-              <motion.div
-                className="h-3 w-3/4 rounded bg-white/70"
-                initial={{ width: 0 }}
-                animate={{ width: "75%" }}
-                transition={{ delay: 0.8, duration: 0.8 }}
-              />
+              <div className="h-3 w-3/4 rounded bg-white/70" />
               <div className="mt-2 h-3 w-1/2 rounded bg-gradient-to-r from-vanyo-400 to-violet-hi" />
               <div className="mt-4 space-y-1.5">
                 <div className="h-2 w-full rounded bg-white/12" />
@@ -79,17 +74,11 @@ export function BrowserMockup() {
           {/* cartes fictives */}
           <div className="mt-6 grid grid-cols-3 gap-3">
             {[0, 1, 2].map((i) => (
-              <motion.div
-                key={i}
-                className="rounded-lg border border-white/8 bg-white/[0.03] p-3"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1 + i * 0.15 }}
-              >
+              <div key={i} className="rounded-lg border border-white/8 bg-white/[0.03] p-3">
                 <div className="h-6 w-6 rounded-md bg-gradient-to-br from-vanyo-500 to-violet-hi" />
                 <div className="mt-2 h-1.5 w-full rounded bg-white/15" />
                 <div className="mt-1 h-1.5 w-2/3 rounded bg-white/10" />
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -115,6 +104,6 @@ export function BrowserMockup() {
         </div>
         <div className="mt-0.5 text-[10px] text-white/50">Livré en 12 jours</div>
       </motion.div>
-    </motion.div>
+    </div>
   );
 }
