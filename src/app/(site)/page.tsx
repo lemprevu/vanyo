@@ -6,7 +6,7 @@ import { WhySection } from "@/components/sections/WhySection";
 import { ProcessSection } from "@/components/sections/ProcessSection";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Gallery } from "@/components/sections/Gallery";
-import { PricingSection } from "@/components/sections/PricingSection";
+import { PricingWithPromo } from "@/components/sections/PricingWithPromo";
 import { Testimonials } from "@/components/sections/Testimonials";
 import { FaqSection } from "@/components/sections/FaqSection";
 import { getRealisations, getAvis, getPlans, getSiteSettings } from "@/lib/data";
@@ -43,7 +43,7 @@ export default async function HomePage() {
         </section>
       )}
 
-      {on("pricing") && <PricingSection plans={plans} />}
+      {on("pricing") && <PricingWithPromo plans={plans} settings={settings} />}
       {on("testimonials") && <Testimonials testimonials={testimonials} />}
       {on("faq") && <FaqSection />}
     </>

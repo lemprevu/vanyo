@@ -3,29 +3,34 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
-import { Check, Sparkles, Ticket, Loader2, X } from "lucide-react";
+import { Check, Sparkles, Ticket, Loader2, X, Megaphone } from "lucide-react";
 import type { Plan } from "@/lib/content";
+import type { SiteSettings } from "@/lib/types";
+import { parsePrice, formatPrice, discountPercent, applyPercent } from "@/lib/price";
 
-type Discount = { code: string; type: "percent" | "amount"; value: number };
-
-/** Parse le montant numérique d'un prix ("1 490€" → 1490). null si non chiffré. */
-function parsePrice(price: string): number | null {
-  const digits = price.replace(/[^\d]/g, "");
-  return digits ? parseInt(digits, 10) : null;
-}
+type Discount = { code: string | null; type: "percent" | "amount"; value: number; label: string };
 
 function applyDiscount(amount: number, d: Discount): number {
   const res = d.type === "percent" ? amount * (1 - d.value / 100) : amount - d.value;
   return Math.max(0, Math.round(res));
 }
 
-const fmt = (n: number) => n.toLocaleString("fr-FR") + "€";
+export function PricingWithPromo({ plans, settings }: { plans: Plan[]; settings: SiteSettings }) {
+  const globalPromoActive =
+    settings.promo_active &&
+    (!settings.promo_expires_at || new Date(settings.promo_expires_at) >= new Date());
 
-export function PricingWithPromo({ plans }: { plans: Plan[] }) {
+  const globalDiscount: Discount | null = globalPromoActive
+    ? { code: null, type: "percent", value: settings.promo_percent, label: settings.promo_label || "Offre limitée" }
+    : null;
+
   const [code, setCode] = useState("");
-  const [discount, setDiscount] = useState<Discount | null>(null);
+  // Un code saisi remplace la promo globale (pas de cumul, pour rester lisible).
+  const [codeDiscount, setCodeDiscount] = useState<Discount | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState("");
+
+  const activeDiscount = codeDiscount ?? globalDiscount;
 
   async function apply() {
     if (!code.trim()) return;
@@ -39,11 +44,11 @@ export function PricingWithPromo({ plans }: { plans: Plan[] }) {
       });
       const data = await res.json();
       if (data.valid) {
-        setDiscount({ code: data.code, type: data.discount_type, value: data.discount_value });
+        setCodeDiscount({ code: data.code, type: data.discount_type, value: data.discount_value, label: data.code });
         setStatus("idle");
         setMessage("");
       } else {
-        setDiscount(null);
+        setCodeDiscount(null);
         setStatus("error");
         setMessage(data.error || "Code invalide.");
       }
@@ -54,7 +59,7 @@ export function PricingWithPromo({ plans }: { plans: Plan[] }) {
   }
 
   function clear() {
-    setDiscount(null);
+    setCodeDiscount(null);
     setCode("");
     setStatus("idle");
     setMessage("");
@@ -62,9 +67,22 @@ export function PricingWithPromo({ plans }: { plans: Plan[] }) {
 
   return (
     <section className="container-v py-14 sm:py-20">
+      {/* Bandeau promo automatique pour tout le monde */}
+      {globalPromoActive && !codeDiscount && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+          className="mx-auto mb-8 flex max-w-xl items-center justify-center gap-2.5 rounded-2xl border border-vanyo-500/40 bg-gradient-to-r from-vanyo-500/15 to-violet-hi/15 px-5 py-3 text-center"
+        >
+          <Megaphone className="h-4 w-4 shrink-0 text-vanyo-300" />
+          <span className="text-sm text-white">
+            <span className="font-semibold">{settings.promo_label}</span> — −{settings.promo_percent}% sur tous les tarifs, appliqué automatiquement
+          </span>
+        </motion.div>
+      )}
+
       {/* Champ code promo */}
       <div className="mx-auto mb-10 max-w-md">
-        {discount ? (
+        {codeDiscount ? (
           <motion.div
             initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
             className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3"
@@ -72,8 +90,8 @@ export function PricingWithPromo({ plans }: { plans: Plan[] }) {
             <div className="flex items-center gap-2.5">
               <Ticket className="h-5 w-5 text-emerald-400" />
               <span className="text-sm text-white">
-                Code <span className="font-mono font-semibold text-emerald-300">{discount.code}</span> appliqué —{" "}
-                {discount.type === "percent" ? `−${discount.value}%` : `−${fmt(discount.value)}`}
+                Code <span className="font-mono font-semibold text-emerald-300">{codeDiscount.code}</span> appliqué —{" "}
+                {codeDiscount.type === "percent" ? `−${codeDiscount.value}%` : `−${formatPrice(codeDiscount.value)}`}
               </span>
             </div>
             <button onClick={clear} className="text-white/50 hover:text-white" aria-label="Retirer le code">
@@ -107,7 +125,13 @@ export function PricingWithPromo({ plans }: { plans: Plan[] }) {
       <div className="grid gap-5 lg:grid-cols-4">
         {plans.map((plan) => {
           const base = parsePrice(plan.price);
-          const discounted = base !== null && discount ? applyDiscount(base, discount) : null;
+          const original = plan.originalPrice ? parsePrice(plan.originalPrice) : null;
+
+          // Une promo (code ou globale) prime sur le prix conseillé pour l'affichage :
+          // on barre le prix affiché et on montre le prix réduit par la promo.
+          const promoDiscounted = base !== null && activeDiscount ? applyDiscount(base, activeDiscount) : null;
+          const manualPct = base !== null && original && original > base ? discountPercent(original, base) : 0;
+
           return (
             <div
               key={plan.name}
@@ -120,14 +144,24 @@ export function PricingWithPromo({ plans }: { plans: Plan[] }) {
                   <Sparkles className="h-3 w-3" /> Le plus choisi
                 </span>
               )}
+              {!plan.highlight && manualPct > 0 && !promoDiscounted && (
+                <span className="absolute -top-3 right-4 rounded-full bg-emerald-500 px-2.5 py-1 text-xs font-semibold text-white">
+                  −{manualPct}%
+                </span>
+              )}
               <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
               <p className="mt-1 text-sm text-white/50">{plan.description}</p>
               <div className="mt-5">
                 {plan.priceNote && <span className="text-xs text-white/45">{plan.priceNote}</span>}
-                {discounted !== null ? (
+                {promoDiscounted !== null ? (
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold tracking-tight text-white">{fmt(discounted)}</span>
-                    <span className="text-base text-white/40 line-through">{fmt(base!)}</span>
+                    <span className="text-3xl font-bold tracking-tight text-white">{formatPrice(promoDiscounted)}</span>
+                    <span className="text-base text-white/40 line-through">{formatPrice(base!)}</span>
+                  </div>
+                ) : original && base ? (
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-bold tracking-tight text-white">{plan.price}</span>
+                    <span className="text-base text-white/40 line-through">{plan.originalPrice}</span>
                   </div>
                 ) : (
                   <div className="text-3xl font-bold tracking-tight text-white">{plan.price}</div>
@@ -142,7 +176,7 @@ export function PricingWithPromo({ plans }: { plans: Plan[] }) {
                 ))}
               </ul>
               <Link
-                href={discount ? `/devis?promo=${encodeURIComponent(discount.code)}` : "/devis"}
+                href={codeDiscount?.code ? `/devis?promo=${encodeURIComponent(codeDiscount.code)}` : "/devis"}
                 className={`btn-premium mt-7 w-full py-3 text-sm ${plan.highlight ? "btn-primary" : "btn-ghost"}`}
               >
                 Demander un devis

@@ -42,6 +42,7 @@ export type Plan = {
   created_at: string;
   name: string;
   price: string;
+  original_price: string | null;
   price_note: string | null;
   description: string | null;
   features: string[];
@@ -106,6 +107,10 @@ export type SiteSettings = {
   ga_id: string | null;
   meta_pixel_id: string | null;
   turnstile_site_key: string | null;
+  promo_active: boolean;
+  promo_label: string | null;
+  promo_percent: number;
+  promo_expires_at: string | null;
 };
 
 export type PromoCode = {

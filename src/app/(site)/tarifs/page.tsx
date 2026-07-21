@@ -5,7 +5,7 @@ import { PricingWithPromo } from "@/components/sections/PricingWithPromo";
 import { FaqSection } from "@/components/sections/FaqSection";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Reveal } from "@/components/ui/Reveal";
-import { getPlans } from "@/lib/data";
+import { getPlans, getSiteSettings } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "Tarifs",
@@ -37,7 +37,7 @@ function Cell({ v }: { v: boolean | string }) {
 }
 
 export default async function TarifsPage() {
-  const plans = await getPlans();
+  const [plans, settings] = await Promise.all([getPlans(), getSiteSettings()]);
   return (
     <>
       <PageHeader
@@ -45,7 +45,7 @@ export default async function TarifsPage() {
         title={<>Un prix juste pour un <span className="text-gradient-violet">site d'exception</span></>}
         subtitle="Pas de coûts cachés. Vous savez exactement ce que vous payez, et pourquoi."
       />
-      <PricingWithPromo plans={plans} />
+      <PricingWithPromo plans={plans} settings={settings} />
 
       <section className="container-v py-16">
         <SectionHeading eyebrow="Comparatif" title={<>Comparez les <span className="text-gradient-violet">formules</span></>} />

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import {
-  Save, CheckCircle2, Loader2, Settings2, Palette, Search, Plug, Mail, Shield, Send,
+  Save, CheckCircle2, Loader2, Settings2, Palette, Search, Plug, Mail, Shield, Send, Megaphone,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { SiteSettingsFull } from "@/lib/types";
@@ -16,6 +16,7 @@ const TABS = [
   { key: "general", label: "Général", icon: Settings2 },
   { key: "apparence", label: "Apparence", icon: Palette },
   { key: "seo", label: "SEO", icon: Search },
+  { key: "promo", label: "Promotions", icon: Megaphone },
   { key: "integrations", label: "Intégrations", icon: Plug },
   { key: "smtp", label: "Emails & SMTP", icon: Mail },
   { key: "securite", label: "Sécurité", icon: Shield },
@@ -198,6 +199,53 @@ export function SettingsTabs({ initial, live }: { initial: SiteSettingsFull; liv
                 <span className="text-sm text-white/70">Site visible par les moteurs de recherche (Google…)</span>
               </label>
             </div>
+          </div>
+        )}
+
+        {/* PROMOTIONS */}
+        {tab === "promo" && (
+          <div className="space-y-5">
+            <div className={`flex items-center justify-between rounded-2xl border p-4 transition-colors ${v.promo_active ? "border-vanyo-500/50 bg-vanyo-500/10" : "border-white/10 bg-white/[0.02]"}`}>
+              <div className="flex items-center gap-3">
+                <Megaphone className={`h-6 w-6 ${v.promo_active ? "text-vanyo-300" : "text-white/40"}`} />
+                <div>
+                  <div className="text-sm font-medium text-white">Promotion pour tous les visiteurs</div>
+                  <div className="text-xs text-white/50">Réduction appliquée automatiquement à tous les tarifs, sans code à saisir.</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => set("promo_active", !v.promo_active)}
+                className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${v.promo_active ? "bg-vanyo-500" : "bg-white/15"}`}
+              >
+                <span className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-transform ${v.promo_active ? "translate-x-6" : "translate-x-1"}`} />
+              </button>
+            </div>
+
+            <div className={`space-y-4 transition-opacity ${v.promo_active ? "" : "pointer-events-none opacity-40"}`}>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FieldGroup label="Libellé affiché">
+                  <Input value={v.promo_label ?? ""} onChange={field("promo_label")} placeholder="Offre limitée" />
+                </FieldGroup>
+                <FieldGroup label="Réduction (%)">
+                  <Input type="number" min={0} max={100} value={v.promo_percent} onChange={(e) => set("promo_percent", Number(e.target.value))} />
+                </FieldGroup>
+              </div>
+              <FieldGroup label="Expire le (optionnel)">
+                <Input type="date" value={v.promo_expires_at ?? ""} onChange={field("promo_expires_at")} />
+              </FieldGroup>
+              <div className="rounded-xl border border-white/8 bg-white/[0.02] p-4">
+                <p className="mb-2 text-xs uppercase tracking-wide text-white/40">Aperçu sur le site</p>
+                <div className="flex items-center gap-2.5 rounded-xl border border-vanyo-500/40 bg-gradient-to-r from-vanyo-500/15 to-violet-hi/15 px-4 py-2.5 text-sm text-white">
+                  <Megaphone className="h-4 w-4 text-vanyo-300" />
+                  <span className="font-semibold">{v.promo_label || "Offre limitée"}</span> — −{v.promo_percent}% sur tous les tarifs, appliqué automatiquement
+                </div>
+              </div>
+            </div>
+
+            <p className="text-xs text-white/40">
+              Un visiteur qui entre un code promo remplace cette réduction automatique par celle du code (elles ne se cumulent pas).
+            </p>
           </div>
         )}
 

@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/sections/PageHeader";
 import { ProcessSection } from "@/components/sections/ProcessSection";
-import { PricingSection } from "@/components/sections/PricingSection";
+import { PricingWithPromo } from "@/components/sections/PricingWithPromo";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { GlowCard } from "@/components/ui/GlowCard";
 import { StaggerGroup, StaggerItem } from "@/components/ui/Reveal";
 import { Icon } from "@/components/ui/Icon";
 import { ButtonLink } from "@/components/ui/Button";
-import { getPlans } from "@/lib/data";
+import { getPlans, getSiteSettings } from "@/lib/data";
 
 export const revalidate = 60;
 
@@ -27,7 +27,7 @@ const TYPES = [
 ];
 
 export default async function CreationSitesPage() {
-  const plans = await getPlans();
+  const [plans, settings] = await Promise.all([getPlans(), getSiteSettings()]);
   return (
     <>
       <PageHeader
@@ -81,7 +81,7 @@ export default async function CreationSitesPage() {
       </div>
 
       <ProcessSection />
-      <PricingSection plans={plans} />
+      <PricingWithPromo plans={plans} settings={settings} />
     </>
   );
 }

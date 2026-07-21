@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Plus, Pencil, Trash2, X, Save, Star } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Save, Star, Tag } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Plan } from "@/lib/types";
 import { Label, Input, Textarea } from "@/components/ui/Field";
+import { parsePrice, discountPercent } from "@/lib/price";
 
 const empty: Omit<Plan, "id" | "created_at"> = {
-  name: "", price: "", price_note: "à partir de", description: "", features: [], highlight: false, position: 0,
+  name: "", price: "", original_price: "", price_note: "à partir de", description: "", features: [], highlight: false, position: 0,
 };
 
 export function PlansManager({ initial, live }: { initial: Plan[]; live: boolean }) {
@@ -80,7 +81,12 @@ export function PlansManager({ initial, live }: { initial: Plan[]; live: boolean
                   <span className="font-medium text-white">{p.name}</span>
                   {p.highlight && <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />}
                 </div>
-                <div className="text-lg font-bold text-white">{p.price}</div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-bold text-white">{p.price}</span>
+                  {p.original_price && (
+                    <span className="text-xs text-white/40 line-through">{p.original_price}</span>
+                  )}
+                </div>
               </div>
               <div className="flex gap-1.5">
                 <button onClick={() => openEdit(p)} className="glass flex h-8 w-8 items-center justify-center rounded-lg text-white/70 hover:text-white"><Pencil className="h-4 w-4" /></button>
@@ -113,13 +119,35 @@ export function PlansManager({ initial, live }: { initial: Plan[]; live: boolean
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label required>Prix</Label>
+                    <Label required>Prix affiché</Label>
                     <Input value={draft.price} onChange={(e) => setDraft({ ...draft, price: e.target.value })} placeholder="1 490€" />
                   </div>
                   <div>
                     <Label>Précision</Label>
                     <Input value={draft.price_note ?? ""} onChange={(e) => setDraft({ ...draft, price_note: e.target.value })} placeholder="à partir de" />
                   </div>
+                </div>
+                <div>
+                  <Label>Prix conseillé (barré, optionnel)</Label>
+                  <Input
+                    value={draft.original_price ?? ""}
+                    onChange={(e) => setDraft({ ...draft, original_price: e.target.value })}
+                    placeholder="Ex : 1 990€ — laissez vide si pas de réduction"
+                  />
+                  {(() => {
+                    const orig = parsePrice(draft.original_price ?? "");
+                    const cur = parsePrice(draft.price);
+                    const pct = orig && cur ? discountPercent(orig, cur) : 0;
+                    return pct > 0 ? (
+                      <p className="mt-1.5 flex items-center gap-1.5 text-xs text-emerald-300">
+                        <Tag className="h-3.5 w-3.5" /> Réduction calculée automatiquement : −{pct}%
+                      </p>
+                    ) : orig ? (
+                      <p className="mt-1.5 text-xs text-amber-300">
+                        Le prix conseillé doit être supérieur au prix affiché pour qu'une réduction apparaisse.
+                      </p>
+                    ) : null;
+                  })()}
                 </div>
                 <div>
                   <Label>Description</Label>

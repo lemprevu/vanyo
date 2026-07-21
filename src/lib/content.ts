@@ -102,6 +102,7 @@ export const PROJECTS: Project[] = [
 export type Plan = {
   name: string;
   price: string;
+  originalPrice?: string | null;
   priceNote: string;
   highlight?: boolean;
   description: string;

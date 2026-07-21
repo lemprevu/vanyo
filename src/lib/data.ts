@@ -80,8 +80,8 @@ export async function getPlans(): Promise<StaticPlan[]> {
   if (!rows || rows.length === 0) return PLANS;
 
   return rows.map((p) => ({
-    name: p.name, price: p.price, priceNote: p.price_note ?? "", description: p.description ?? "",
-    features: p.features, highlight: p.highlight,
+    name: p.name, price: p.price, originalPrice: p.original_price, priceNote: p.price_note ?? "",
+    description: p.description ?? "", features: p.features, highlight: p.highlight,
   }));
 }
 
@@ -112,6 +112,10 @@ export const SETTINGS_FALLBACK: SiteSettings = {
   ga_id: null,
   meta_pixel_id: null,
   turnstile_site_key: null,
+  promo_active: false,
+  promo_label: "Offre limitée",
+  promo_percent: 10,
+  promo_expires_at: null,
 };
 
 /**

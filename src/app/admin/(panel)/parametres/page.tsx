@@ -12,6 +12,7 @@ const DEMO_PLAN_ROWS: Plan[] = DEMO_PLANS.map((p, i) => ({
   created_at: new Date().toISOString(),
   name: p.name,
   price: p.price,
+  original_price: null,
   price_note: p.priceNote,
   description: p.description,
   features: p.features,
