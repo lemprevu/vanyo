@@ -6,6 +6,7 @@ import { CustomCursor } from "@/components/fx/CustomCursor";
 import { ScrollProgress } from "@/components/fx/ScrollProgress";
 import { AuroraBackground, MouseGlow } from "@/components/fx/Backgrounds";
 import { SiteRuntime } from "@/components/SiteRuntime";
+import { SiteThemeProvider } from "@/components/SiteThemeProvider";
 import { getSiteSettings } from "@/lib/data";
 
 export const revalidate = 60;
@@ -47,13 +48,15 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
   return (
     <>
       <SiteRuntime settings={settings} />
-      <AuroraBackground />
-      <MouseGlow />
-      <ScrollProgress />
-      <CustomCursor />
-      <Navbar />
-      <main className="relative z-10 flex-1 pt-24">{children}</main>
-      <Footer settings={settings} />
+      <SiteThemeProvider defaultAccent={settings.brand_color}>
+        <AuroraBackground />
+        <MouseGlow />
+        <ScrollProgress />
+        <CustomCursor />
+        <Navbar />
+        <main className="relative z-10 flex-1 pt-24">{children}</main>
+        <Footer settings={settings} />
+      </SiteThemeProvider>
     </>
   );
 }

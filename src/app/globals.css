@@ -34,10 +34,36 @@
 :root {
   color-scheme: dark;
   --bg: #050505;
+  /* Jetons de thème (valeurs sombres par défaut). Réutilisés dans les
+     classes utilitaires ci-dessous ET dans toutes les classes Tailwind
+     text-white/bg-white/border-white (Tailwind v4 compile ces utilitaires
+     en référençant --color-white via var()), ce qui permet de faire
+     basculer TOUT le site clair/sombre sans toucher aux composants. */
+  --fg-rgb: 255, 255, 255;   /* halos, bordures, surfaces "glass" */
+  --card-rgb: 14, 14, 18;    /* fond des cartes verre dépoli */
+  --grad-start: #ffffff;     /* départ du dégradé de texte "text-gradient" */
+}
+
+/*
+  Thème clair, scindé sur le site public uniquement (voir la balise
+  data-theme posée par ThemeProvider dans (site)/layout.tsx — jamais sur
+  <html>, pour ne pas affecter le panel admin qui a ses propres besoins,
+  ex. fond blanc garanti pour l'aperçu de QR code ou de signature email).
+*/
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f7f6fb;
+  --fg-rgb: 20, 18, 35;
+  --card-rgb: 255, 255, 255;
+  --grad-start: #17142b;
+  --color-white: #15132a;
+  --color-ink: #f7f6fb;
+  --color-ink-soft: #ffffff;
+  --color-ink-card: #ffffff;
 }
 
 * {
-  border-color: rgba(255, 255, 255, 0.06);
+  border-color: rgba(var(--fg-rgb), 0.06);
 }
 
 html {
@@ -51,7 +77,7 @@ html {
 
 body {
   background: var(--bg);
-  color: #f5f5f7;
+  color: var(--color-white);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
@@ -83,7 +109,7 @@ body {
 
 ::selection {
   background: rgba(109, 74, 255, 0.35);
-  color: #fff;
+  color: var(--color-white);
 }
 
 /* ---------- Utilitaires ---------- */
@@ -96,7 +122,7 @@ body {
 }
 
 .text-gradient {
-  background: linear-gradient(120deg, #ffffff 0%, var(--color-vanyo-200) 55%, var(--color-violet-hi) 100%);
+  background: linear-gradient(120deg, var(--grad-start) 0%, var(--color-vanyo-200) 55%, var(--color-violet-hi) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -111,17 +137,17 @@ body {
 
 /* Verre dépoli léger */
 .glass {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(var(--fg-rgb), 0.03);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(var(--fg-rgb), 0.07);
 }
 
 .glass-strong {
-  background: rgba(14, 14, 18, 0.72);
+  background: rgba(var(--card-rgb), 0.72);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(var(--fg-rgb), 0.08);
 }
 
 /* Bordure en dégradé (technique masque) */
@@ -148,8 +174,8 @@ body {
 /* Grille de fond subtile */
 .bg-grid {
   background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    linear-gradient(to right, rgba(var(--fg-rgb), 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(var(--fg-rgb), 0.035) 1px, transparent 1px);
   background-size: 56px 56px;
   -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
   mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
@@ -238,12 +264,12 @@ body {
 }
 
 .btn-ghost {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #f0eeff;
+  background: rgba(var(--fg-rgb), 0.04);
+  border: 1px solid rgba(var(--fg-rgb), 0.1);
+  color: var(--color-white);
 }
 .btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(var(--fg-rgb), 0.08);
   border-color: rgba(109, 74, 255, 0.5);
   transform: translateY(-2px);
 }

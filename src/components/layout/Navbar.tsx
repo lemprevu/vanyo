@@ -4,15 +4,17 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
-import { Menu, X, ArrowRight } from "lucide-react";
+import { Menu, X, ArrowRight, Sun, Moon } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { NAV_LINKS } from "@/lib/site";
 import { Magnetic } from "@/components/ui/Magnetic";
+import { useSiteTheme } from "@/lib/theme-context";
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const { theme, setTheme } = useSiteTheme();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -24,11 +26,11 @@ export function Navbar() {
   useEffect(() => setOpen(false), [pathname]);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-3">
-      <motion.nav
-        initial={{ y: -80, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+    // reveal-css (CSS pur, pas Framer Motion) : c'est la barre de navigation
+    // ET le bouton menu — une animation JS bloquée ici rendrait le site
+    // entier inutilisable (déjà observé sur Safari iOS).
+    <header className="reveal-css fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-3">
+      <nav
         className={`flex w-full max-w-6xl items-center justify-between rounded-2xl px-4 py-2.5 transition-all duration-500 ${
           scrolled ? "glass-strong shadow-glow" : "bg-transparent"
         }`}
@@ -60,6 +62,14 @@ export function Navbar() {
         </div>
 
         <div className="hidden items-center gap-2 lg:flex">
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            aria-label={theme === "dark" ? "Passer en thème clair" : "Passer en thème sombre"}
+            title={theme === "dark" ? "Thème clair" : "Thème sombre"}
+            className="glass flex h-10 w-10 items-center justify-center rounded-xl text-white/70 transition-colors hover:text-white"
+          >
+            {theme === "dark" ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
+          </button>
           <Magnetic strength={0.4}>
             <Link
               href="/devis"
@@ -71,14 +81,23 @@ export function Navbar() {
           </Magnetic>
         </div>
 
-        <button
-          aria-label="Menu"
-          onClick={() => setOpen((v) => !v)}
-          className="glass flex h-10 w-10 items-center justify-center rounded-xl text-white lg:hidden"
-        >
-          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
-      </motion.nav>
+        <div className="flex items-center gap-2 lg:hidden">
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            aria-label={theme === "dark" ? "Passer en thème clair" : "Passer en thème sombre"}
+            className="glass flex h-10 w-10 items-center justify-center rounded-xl text-white/70"
+          >
+            {theme === "dark" ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
+          </button>
+          <button
+            aria-label="Menu"
+            onClick={() => setOpen((v) => !v)}
+            className="glass flex h-10 w-10 items-center justify-center rounded-xl text-white"
+          >
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
+      </nav>
 
       <AnimatePresence>
         {open && (
