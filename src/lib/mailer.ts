@@ -7,9 +7,12 @@ import { getSiteSettingsFull } from "@/lib/settings-server";
  * configuré : la réception du devis/message ne doit jamais échouer
  * juste parce que l'email ne part pas.
  */
-export async function sendNotification(subject: string, html: string) {
+export async function sendNotification(subject: string, html: string, options?: { bypassToggle?: boolean }) {
   try {
     const s = await getSiteSettingsFull();
+    if (!s.notify_enabled && !options?.bypassToggle) {
+      return { sent: false, reason: "notifications-disabled" };
+    }
     if (!s.smtp_host || !s.smtp_user || !s.smtp_password) {
       return { sent: false, reason: "smtp-not-configured" };
     }

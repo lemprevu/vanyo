@@ -133,6 +133,8 @@ export type SiteSettingsFull = SiteSettings & {
   smtp_password: string | null;
   smtp_from: string | null;
   notify_email: string | null;
+  /** Active/désactive l'envoi des emails de notification, indépendamment de la config SMTP. */
+  notify_enabled: boolean;
   /** Clé API PageSpeed Insights (Google Cloud), optionnelle — voir /admin/performance. */
   pagespeed_api_key: string | null;
 };

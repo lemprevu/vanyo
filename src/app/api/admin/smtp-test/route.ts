@@ -13,7 +13,8 @@ export async function POST() {
 
   const result = await sendNotification(
     "Test SMTP — Vanyo",
-    emailTemplate("Configuration SMTP validée", [["Statut", "L'envoi d'emails fonctionne 🎉"]])
+    emailTemplate("Configuration SMTP validée", [["Statut", "L'envoi d'emails fonctionne 🎉"]]),
+    { bypassToggle: true }
   );
 
   if (!result.sent) {

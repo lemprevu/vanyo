@@ -298,7 +298,29 @@ export function SettingsTabs({ initial, live, onChange }: { initial: SiteSetting
             <p className="text-sm text-white/50">
               Configurez votre SMTP (ex. OVH) pour recevoir un email à chaque nouvelle demande de devis ou message.
             </p>
-            <div className="grid gap-4 sm:grid-cols-2">
+
+            <div className={`flex items-center justify-between rounded-2xl border p-4 transition-colors ${v.notify_enabled ? "border-vanyo-500/50 bg-vanyo-500/10" : "border-white/10 bg-white/[0.02]"}`}>
+              <div className="flex items-center gap-3">
+                <Mail className={`h-6 w-6 ${v.notify_enabled ? "text-vanyo-300" : "text-white/40"}`} />
+                <div>
+                  <div className="text-sm font-medium text-white">Recevoir les emails de notification</div>
+                  <div className="text-xs text-white/50">
+                    {v.notify_enabled
+                      ? "Un email est envoyé à chaque nouvelle demande de devis ou message."
+                      : "Aucun email ne sera envoyé, même si le SMTP est configuré."}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => set("notify_enabled", !v.notify_enabled)}
+                className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${v.notify_enabled ? "bg-vanyo-500" : "bg-white/15"}`}
+              >
+                <span className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-transform ${v.notify_enabled ? "translate-x-6" : "translate-x-1"}`} />
+              </button>
+            </div>
+
+            <div className={`grid gap-4 sm:grid-cols-2 transition-opacity ${v.notify_enabled ? "" : "pointer-events-none opacity-40"}`}>
               <FieldGroup label="Serveur SMTP"><Input value={v.smtp_host ?? ""} onChange={field("smtp_host")} placeholder="ssl0.ovh.net" /></FieldGroup>
               <FieldGroup label="Port"><Input type="number" value={v.smtp_port ?? 587} onChange={(e) => set("smtp_port", Number(e.target.value))} placeholder="587" /></FieldGroup>
               <FieldGroup label="Utilisateur"><Input value={v.smtp_user ?? ""} onChange={field("smtp_user")} placeholder="contact@vanyo.fr" /></FieldGroup>
