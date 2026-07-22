@@ -85,8 +85,23 @@ export type SettingsSection = {
   icon: LucideIcon;
 };
 
+/**
+ * Section « planning » : vue calendrier/agenda. Ne stocke pas ses propres
+ * données — elle lit et écrit celles d'une section « demandes » (sourceId),
+ * pour que le calendrier et la liste restent synchronisés.
+ */
+export type PlanningSection = {
+  type: "planning";
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  sourceId: string;    // id de la section « requests » associée
+  dateField: string;   // champ date des lignes (ex. "date")
+  timeField?: string;  // champ heure (ex. "heure")
+};
+
 export type Section =
-  | CollectionSection | RequestsSection | ReviewsSection | MessagesSection | SettingsSection;
+  | CollectionSection | RequestsSection | ReviewsSection | MessagesSection | SettingsSection | PlanningSection;
 
 /** Configuration complète d'un métier. */
 export type MetierConfig = {

@@ -17,7 +17,7 @@ export function DemoDashboard() {
 
   // KPIs : nombre d'éléments par section (hors réglages), 4 max.
   const kpis = config.sections
-    .filter((s) => s.type !== "settings")
+    .filter((s) => s.type !== "settings" && s.type !== "planning")
     .slice(0, 4)
     .map((s, i) => ({
       label: s.label,

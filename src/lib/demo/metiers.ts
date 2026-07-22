@@ -60,6 +60,7 @@ export const METIERS: MetierConfig[] = [
           { id: "4", created_at: ago(3 * D), status: "Honorée", client: "Antoine Lefèvre", email: "antoine@mail.fr", date: "2026-07-19", heure: "20:30", couverts: 3, viewed: true },
         ],
       },
+      { type: "planning", id: "planning", label: "Planning", icon: CalendarDays, sourceId: "reservations", dateField: "date", timeField: "heure" },
       {
         type: "collection", id: "carte", label: "Carte & menu", icon: UtensilsCrossed,
         itemLabel: "un plat", titleField: "nom", layout: "grid", colorField: "color",
@@ -152,6 +153,7 @@ export const METIERS: MetierConfig[] = [
           { id: "2", created_at: ago(26 * H), status: "Planifiée", client: "Sarah Benali", email: "sarah@mail.fr", telephone: "07 88 99 00 11", bien: "Maison familiale avec jardin", date: "2026-07-25", message: "Nous venons en couple.", viewed: true },
         ],
       },
+      { type: "planning", id: "planning", label: "Planning des visites", icon: CalendarDays, sourceId: "visites", dateField: "date" },
       { type: "reviews", id: "avis", label: "Avis clients", icon: Star, seed: reviews([
         ["Julien Moreau", "", 5, "Accompagnement au top, vendu en 3 semaines."],
         ["Inès Roux", "", 5, "Équipe réactive et de bon conseil."],
@@ -332,6 +334,7 @@ export const METIERS: MetierConfig[] = [
           { id: "2", created_at: ago(20 * H), status: "Confirmé", client: "Nadia Cherif", email: "nadia@mail.fr", telephone: "07 21 21 21 21", prestation: "Coupe", date: "2026-07-23", heure: "10:30", viewed: true },
         ],
       },
+      { type: "planning", id: "planning", label: "Planning", icon: CalendarDays, sourceId: "rdv", dateField: "date", timeField: "heure" },
       {
         type: "collection", id: "prestations", label: "Prestations & tarifs", icon: Sparkles,
         itemLabel: "une prestation", titleField: "nom", layout: "list",
@@ -401,6 +404,7 @@ export const METIERS: MetierConfig[] = [
           { id: "2", created_at: ago(22 * H), status: "Confirmé", patient: "Fatima Zahra", email: "fatima@mail.fr", telephone: "07 66 55 44 33", motif: "Renouvellement ordonnance", praticien: "Dr Lemoine", date: "2026-07-23", heure: "14:00", viewed: true },
         ],
       },
+      { type: "planning", id: "planning", label: "Planning", icon: CalendarDays, sourceId: "rdv", dateField: "date", timeField: "heure" },
       {
         type: "collection", id: "praticiens", label: "Praticiens", icon: Users,
         itemLabel: "un praticien", titleField: "nom", layout: "grid", colorField: "color",
@@ -547,6 +551,7 @@ export const METIERS: MetierConfig[] = [
           { id: "2", created_at: ago(30 * H), status: "En discussion", client: "Studio Mode", email: "studio@mail.fr", type: "Mode", date: "2026-08-12", lieu: "Paris 11e", budget: "Sur devis", message: "Shooting lookbook automne.", viewed: true },
         ],
       },
+      { type: "planning", id: "planning", label: "Planning des shootings", icon: CalendarDays, sourceId: "demandes", dateField: "date" },
       {
         type: "collection", id: "formules", label: "Formules", icon: ClipboardList,
         itemLabel: "une formule", titleField: "nom", layout: "list",

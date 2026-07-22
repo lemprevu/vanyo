@@ -5,13 +5,15 @@ import { SettingsTabs } from "@/app/admin/(panel)/parametres/SettingsTabs";
 import type { Avis } from "@/lib/types";
 import { useBiz } from "@/lib/demo/BizProvider";
 import type { Row, Section } from "@/lib/demo/types";
+import type { RequestsSection } from "@/lib/demo/types";
 import { CollectionManager } from "./CollectionManager";
 import { RequestsManager } from "./RequestsManager";
 import { MessagesManager } from "./MessagesManager";
+import { PlanningManager } from "./PlanningManager";
 
 /** Affiche le bon manager selon le type de section. */
 export function SectionRenderer({ section }: { section: Section }) {
-  const { state, setCollection, setSettings } = useBiz();
+  const { config, state, setCollection, setSettings } = useBiz();
 
   if (section.type === "settings") {
     return (
@@ -22,6 +24,20 @@ export function SectionRenderer({ section }: { section: Section }) {
         </div>
         <SettingsTabs initial={state.settings} live={false} onChange={setSettings} />
       </div>
+    );
+  }
+
+  // Le planning partage les données de sa section « demandes » source.
+  if (section.type === "planning") {
+    const source = config.sections.find((s) => s.id === section.sourceId) as RequestsSection | undefined;
+    if (!source) return null;
+    return (
+      <PlanningManager
+        section={section}
+        source={source}
+        rows={state.collections[section.sourceId] ?? []}
+        onChange={(r) => setCollection(section.sourceId, r)}
+      />
     );
   }
 
