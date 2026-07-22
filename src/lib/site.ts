@@ -17,11 +17,16 @@ export const SITE = {
   // référencement local si l'adresse ne correspond à rien de réel).
   address: "France entière — 100% à distance",
   hours: "Lun – Ven · 9h – 19h",
+  // Vides tant qu'aucun vrai profil n'existe : un lien vers la page
+  // d'accueil générique d'un réseau (ex. instagram.com) plutôt que vers un
+  // vrai profil Vanyo est pire que pas de lien du tout — trompeur pour les
+  // visiteurs et sans valeur pour Google. Renseigner les vraies URLs ici
+  // (ou via /admin/parametres) dès que les comptes existent.
   socials: {
-    instagram: "https://instagram.com",
-    linkedin: "https://linkedin.com",
-    twitter: "https://x.com",
-    dribbble: "https://dribbble.com",
+    instagram: "",
+    linkedin: "",
+    twitter: "",
+    dribbble: "",
   },
 } as const;
 
