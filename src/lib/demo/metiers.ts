@@ -7,7 +7,7 @@ import {
   UtensilsCrossed, CalendarClock, Image as ImageIcon, Star, Mail, Settings,
   Building2, Key, ShoppingBag, Package, Ticket, Wrench, ClipboardList, Hammer,
   Scissors, Sparkles, Users, Stethoscope, CalendarDays, Newspaper, HandHeart,
-  Camera, Aperture, Leaf, Store,
+  Camera, Aperture, Leaf, Store, Car, Gauge,
 } from "lucide-react";
 import type { MetierConfig, Row } from "./types";
 
@@ -572,6 +572,84 @@ export const METIERS: MetierConfig[] = [
       ]) },
       { type: "messages", id: "messages", label: "Messages", icon: Mail, seed: messages([
         ["Julie P.", "julie@mail.fr", "Disponibilité août", "Bonjour, êtes-vous libre le 22 août pour un portrait famille ?", false],
+      ]) },
+      { type: "settings", id: "parametres", label: "Paramètres", icon: Settings },
+    ],
+  },
+
+  // ─────────────────────────── GARAGE AUTOMOBILE ───────────────────────────
+  {
+    id: "garage",
+    label: "Garage automobile",
+    icon: Car,
+    tagline: "Rendez-vous atelier, prestations, véhicules d'occasion…",
+    businessName: "Garage Delorme",
+    accent: "#D6342A",
+    settings: { tagline: "Mécanique, entretien & occasions", email: "contact@garage-delorme.fr", phone: "02 40 00 00 00", address: "Zone artisanale, Loire-Atlantique", hours: "Lun – Ven · 8h – 18h30 · Sam matin" },
+    sections: [
+      {
+        type: "requests", id: "rendezvous", label: "Rendez-vous atelier", icon: CalendarClock,
+        nameField: "client", countsAsPending: true,
+        statuses: ["Nouvelle", "Confirmé", "Honoré", "Annulé"],
+        columns: ["prestation", "vehicule"],
+        fields: [
+          { key: "client", label: "Client", type: "text", required: true },
+          { key: "email", label: "Email", type: "text" },
+          { key: "telephone", label: "Téléphone", type: "text" },
+          { key: "vehicule", label: "Véhicule", type: "text", placeholder: "Marque, modèle, année" },
+          { key: "prestation", label: "Prestation", type: "select", options: ["Révision", "Vidange", "Pneus", "Diagnostic panne", "Carrosserie", "Contrôle technique (préparation)"] },
+          { key: "date", label: "Date souhaitée", type: "date" },
+          { key: "heure", label: "Heure", type: "select", options: ["8:00", "9:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00"] },
+          { key: "notes", label: "Description de la panne / demande", type: "textarea" },
+        ],
+        seed: [
+          { id: "1", created_at: ago(2 * H), status: "Nouvelle", client: "Kevin Ardant", email: "kevin@mail.fr", telephone: "06 33 22 11 00", vehicule: "Peugeot 308 (2019)", prestation: "Révision", date: "2026-07-25", heure: "9:00", notes: "Voyant moteur allumé depuis hier.", viewed: false },
+          { id: "2", created_at: ago(26 * H), status: "Confirmé", client: "Sophie Renaud", email: "sophie@mail.fr", telephone: "07 44 55 66 77", vehicule: "Porsche 911 (2016)", prestation: "Diagnostic panne", date: "2026-07-24", heure: "14:00", notes: "Bruit suspect au freinage.", viewed: true },
+          { id: "3", created_at: ago(3 * D), status: "Honoré", client: "Marc Guillou", email: "marc@mail.fr", vehicule: "Renault Clio (2021)", prestation: "Pneus", date: "2026-07-19", heure: "10:00", viewed: true },
+        ],
+      },
+      { type: "planning", id: "planning", label: "Planning atelier", icon: CalendarDays, sourceId: "rendezvous", dateField: "date", timeField: "heure" },
+      {
+        type: "collection", id: "prestations", label: "Prestations & tarifs", icon: Wrench,
+        itemLabel: "une prestation", titleField: "nom", layout: "list",
+        fields: [
+          { key: "nom", label: "Prestation", type: "text", required: true },
+          { key: "categorie", label: "Catégorie", type: "select", options: ["Entretien", "Mécanique", "Pneumatiques", "Carrosserie", "Diagnostic"], badge: true },
+          { key: "prix", label: "Prix indicatif", type: "text", placeholder: "À partir de 49€" },
+          { key: "description", label: "Description", type: "textarea", hideInList: true },
+        ],
+        seed: [
+          { id: "1", nom: "Vidange + filtre à huile", categorie: "Entretien", prix: "À partir de 79€", description: "Vidange moteur avec huile et filtre d'origine ou équivalent." },
+          { id: "2", nom: "Révision complète", categorie: "Entretien", prix: "À partir de 149€", description: "Contrôle des points de sécurité, niveaux, freins, suspension." },
+          { id: "3", nom: "Montage 4 pneus", categorie: "Pneumatiques", prix: "À partir de 39€ la pose", description: "Montage, équilibrage et valves neuves, pneu non inclus." },
+          { id: "4", nom: "Diagnostic électronique", categorie: "Diagnostic", prix: "39€", description: "Lecture des défauts moteur via valise de diagnostic." },
+        ],
+      },
+      {
+        type: "collection", id: "occasions", label: "Véhicules d'occasion", icon: Gauge,
+        itemLabel: "un véhicule", titleField: "titre", layout: "grid", colorField: "color",
+        fields: [
+          { key: "titre", label: "Titre de l'annonce", type: "text", required: true },
+          { key: "prix", label: "Prix", type: "price", suffix: " €" },
+          { key: "annee", label: "Année", type: "text" },
+          { key: "kilometrage", label: "Kilométrage", type: "text", placeholder: "45 000 km" },
+          { key: "carburant", label: "Carburant", type: "select", options: ["Essence", "Diesel", "Hybride", "Électrique"] },
+          { key: "description", label: "Description", type: "textarea", hideInList: true },
+          { key: "vendu", label: "Vendu", type: "boolean" },
+          { key: "color", label: "Couleur du visuel", type: "color", hideInList: true },
+        ],
+        seed: [
+          { id: "1", titre: "Porsche Boxster S", prix: 32900, annee: "2018", kilometrage: "58 000 km", carburant: "Essence", description: "Toit dur, entretien exclusivement en concession.", vendu: false, color: "from-rose-500/30 to-vanyo-500/30" },
+          { id: "2", titre: "Ferrari 348 (collection)", prix: 89000, annee: "1991", kilometrage: "72 000 km", carburant: "Essence", description: "Véhicule de collection, historique complet disponible.", vendu: false, color: "from-amber-500/30 to-vanyo-500/30" },
+          { id: "3", titre: "Volkswagen Golf GTD", prix: 18900, annee: "2020", kilometrage: "41 000 km", carburant: "Diesel", description: "Première main, carnet d'entretien à jour.", vendu: false, color: "from-sky-500/30 to-vanyo-500/30" },
+        ],
+      },
+      { type: "reviews", id: "avis", label: "Avis clients", icon: Star, seed: reviews([
+        ["Kevin Ardant", "", 5, "Diagnostic rapide et prix honnête, je recommande."],
+        ["Sophie Renaud", "", 5, "Une équipe qui s'y connaît vraiment, même sur les voitures de collection."],
+      ]) },
+      { type: "messages", id: "messages", label: "Messages", icon: Mail, seed: messages([
+        ["Antoine V.", "antoine@mail.fr", "Rachat véhicule", "Bonjour, reprenez-vous les anciens véhicules à l'achat d'une occasion ?", false],
       ]) },
       { type: "settings", id: "parametres", label: "Paramètres", icon: Settings },
     ],
