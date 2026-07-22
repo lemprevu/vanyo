@@ -10,13 +10,13 @@ export function AuroraBackground() {
   return (
     <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-ink">
       <div className="absolute inset-0 bg-grid opacity-70" />
-      <div className="animate-aurora absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-vanyo-500/25 blur-[130px]" />
+      <div className="animate-aurora absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-vanyo-500/25 blur-[70px] sm:blur-[130px]" />
       <div
-        className="animate-aurora absolute right-0 top-1/4 h-[460px] w-[460px] rounded-full bg-violet-hi/20 blur-[130px]"
+        className="animate-aurora absolute right-0 top-1/4 h-[460px] w-[460px] rounded-full bg-violet-hi/20 blur-[70px] sm:blur-[130px]"
         style={{ animationDelay: "-6s" }}
       />
       <div
-        className="animate-aurora absolute bottom-0 left-1/3 h-[420px] w-[420px] rounded-full bg-violet-mid/15 blur-[130px]"
+        className="animate-aurora absolute bottom-0 left-1/3 h-[420px] w-[420px] rounded-full bg-violet-mid/15 blur-[70px] sm:blur-[130px]"
         style={{ animationDelay: "-12s" }}
       />
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-ink" />
