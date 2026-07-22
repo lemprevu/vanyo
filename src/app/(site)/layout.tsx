@@ -6,6 +6,7 @@ import { CustomCursor } from "@/components/fx/CustomCursor";
 import { ScrollProgress } from "@/components/fx/ScrollProgress";
 import { AuroraBackground, MouseGlow } from "@/components/fx/Backgrounds";
 import { SiteRuntime } from "@/components/SiteRuntime";
+import { PageTracker } from "@/components/PageTracker";
 import { SiteThemeProvider } from "@/components/SiteThemeProvider";
 import { getSiteSettings } from "@/lib/data";
 
@@ -51,6 +52,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
   const settings = await getSiteSettings();
   return (
     <>
+      <PageTracker />
       <SiteRuntime settings={settings} />
       <SiteThemeProvider defaultAccent={settings.brand_color}>
         <AuroraBackground />

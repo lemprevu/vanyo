@@ -1,11 +1,13 @@
 import {
   FileText, Star, MessageSquare, ImageIcon, ExternalLink,
-  CheckCircle2, AlertTriangle, XCircle, Gauge,
+  CheckCircle2, AlertTriangle, XCircle, Gauge, Eye, Smartphone, Globe2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getSiteSettingsFull } from "@/lib/settings-server";
 import { runSiteAudit, runPageSpeed } from "@/lib/seo/audit";
+import { getTrafficStats } from "@/lib/seo/analytics";
 import { StatCard } from "@/components/admin/StatCard";
+import { AreaChart } from "@/components/admin/Charts";
 import { SITE } from "@/lib/site";
 import type { Avis } from "@/lib/types";
 
@@ -30,13 +32,14 @@ export default async function PerformancePage() {
   const live = !!supabase;
   const settings = await getSiteSettingsFull();
 
-  const [audit, avis, devisCount, messagesCount] = await Promise.all([
+  const [audit, avis, devisCount, messagesCount, traffic] = await Promise.all([
     runSiteAudit(),
     live
       ? supabase.from("avis").select("rating")
       : Promise.resolve({ data: null }),
     live ? supabase.from("devis").select("*", { count: "exact", head: true }) : Promise.resolve({ count: 142 }),
     live ? supabase.from("messages").select("*", { count: "exact", head: true }) : Promise.resolve({ count: 12 }),
+    getTrafficStats(supabase),
   ]);
 
   const ratings = (avis.data as Pick<Avis, "rating">[] | null)?.map((a) => a.rating) ?? [];
@@ -64,6 +67,72 @@ export default async function PerformancePage() {
         <StatCard icon={Star} label="Note moyenne avis" value={avgRating === "—" ? "—" : `${avgRating}/5`} accent="amber" />
         <StatCard icon={MessageSquare} label="Messages reçus" value={messagesCount.count ?? 0} accent="sky" />
         <StatCard icon={ImageIcon} label="Pages publiées (sitemap)" value={audit.sitemapUrlCount} accent="emerald" />
+      </div>
+
+      {/* Trafic réel (maison, sans service tiers) */}
+      <div className="gradient-border rounded-2xl bg-ink-card/60 p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold text-white">Trafic du site</h2>
+            <p className="text-xs text-white/45">14 derniers jours · mesure maison, aucune donnée personnelle stockée</p>
+          </div>
+          <Eye className="h-6 w-6 text-vanyo-300" />
+        </div>
+
+        {!traffic && (
+          <div className="rounded-xl border border-amber-500/25 bg-amber-500/8 p-4 text-sm text-amber-200">
+            Le suivi de trafic nécessite Supabase (table <code>page_views</code>). Exécutez{" "}
+            <code>supabase/analytics.sql</code> dans l&apos;éditeur SQL de votre projet — les visites sont
+            ensuite enregistrées automatiquement, aucune autre configuration requise.
+          </div>
+        )}
+
+        {traffic && traffic.total === 0 && (
+          <div className="rounded-xl border border-white/8 bg-white/[0.02] p-4 text-sm text-white/50">
+            Aucune visite enregistrée pour l&apos;instant. Le suivi vient d&apos;être activé — revenez dans
+            quelques heures une fois que des visiteurs seront passés sur le site.
+          </div>
+        )}
+
+        {traffic && traffic.total > 0 && (
+          <div className="space-y-5">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <StatCard icon={Eye} label="Vues de page (14j)" value={traffic.total} accent="vanyo" />
+              <StatCard icon={Globe2} label="Sources différentes" value={traffic.uniqueSources} accent="sky" />
+              <StatCard icon={Smartphone} label="Part mobile" value={`${traffic.mobileShare}%`} accent="amber" />
+            </div>
+
+            <div>
+              <p className="mb-2 text-sm font-medium text-white/70">Évolution quotidienne</p>
+              <AreaChart data={traffic.trend.data} labels={traffic.trend.labels} height={180} />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="mb-2 text-sm font-medium text-white/70">Pages les plus visitées</p>
+                <div className="space-y-1.5">
+                  {traffic.topPages.map((p) => (
+                    <div key={p.path} className="flex items-center justify-between rounded-lg border border-white/6 bg-white/[0.02] px-3 py-2 text-sm">
+                      <span className="truncate text-white/80">{p.path}</span>
+                      <span className="shrink-0 pl-2 text-white/45">{p.count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="mb-2 text-sm font-medium text-white/70">D&apos;où viennent les visiteurs</p>
+                <div className="space-y-1.5">
+                  {traffic.topSources.map((s) => (
+                    <div key={s.source} className="flex items-center justify-between rounded-lg border border-white/6 bg-white/[0.02] px-3 py-2 text-sm">
+                      <span className="truncate text-white/80">{s.source === "direct" ? "Accès direct" : s.source}</span>
+                      <span className="shrink-0 pl-2 text-white/45">{s.count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Auto-diagnostic technique */}
