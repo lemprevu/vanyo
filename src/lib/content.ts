@@ -112,7 +112,8 @@ export type Plan = {
 export const PLANS: Plan[] = [
   {
     name: "Starter",
-    price: "690€",
+    price: "500€",
+    originalPrice: "720€",
     priceNote: "à partir de",
     description: "Idéal pour lancer une présence en ligne soignée.",
     features: [
@@ -126,7 +127,8 @@ export const PLANS: Plan[] = [
   },
   {
     name: "Business",
-    price: "1 490€",
+    price: "1 200€",
+    originalPrice: "1 750€",
     priceNote: "à partir de",
     highlight: true,
     description: "Le choix des entreprises qui veulent convertir.",
@@ -142,7 +144,8 @@ export const PLANS: Plan[] = [
   },
   {
     name: "Premium",
-    price: "2 990€",
+    price: "2 500€",
+    originalPrice: "3 600€",
     priceNote: "à partir de",
     description: "Pour un projet ambitieux et évolutif.",
     features: [
