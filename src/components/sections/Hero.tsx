@@ -24,9 +24,13 @@ export function Hero() {
             Agence web premium · Sites qui convertissent
           </div>
 
+          {/* Pas de reveal-css ici : ce H1 est l'élément LCP de la page (le
+              plus gros bloc de texte au-dessus de la ligne de flottaison).
+              Le faire démarrer à opacity:0 retarde — et sous throttling CPU
+              fort peut carrément empêcher — l'enregistrement du Largest
+              Contentful Paint par Chrome. Il doit être visible immédiatement. */}
           <h1
-            className="reveal-css mt-6 text-balance text-4xl font-semibold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl"
-            style={{ animationDelay: "0.12s" }}
+            className="mt-6 text-balance text-4xl font-semibold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl"
           >
             Votre présence en ligne mérite bien plus qu&apos;un{" "}
             <span className="text-gradient-violet">simple site.</span>
