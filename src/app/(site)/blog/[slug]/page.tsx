@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Calendar, Clock, ArrowLeft } from "lucide-react";
 import { ARTICLES } from "@/lib/content";
 import { getArticleBySlug } from "@/lib/data";
 import { ButtonLink } from "@/components/ui/Button";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { articleSchema, breadcrumbSchema } from "@/lib/seo/schema";
 
 export function generateStaticParams() {
   return ARTICLES.map((a) => ({ slug: a.slug }));
@@ -20,7 +23,18 @@ export async function generateMetadata({
   const { slug } = await params;
   const article = await getArticleBySlug(slug);
   if (!article) return { title: "Article introuvable" };
-  return { title: article.title, description: article.excerpt };
+  return {
+    title: article.title,
+    description: article.excerpt,
+    alternates: { canonical: `/blog/${slug}` },
+    openGraph: {
+      type: "article",
+      title: article.title,
+      description: article.excerpt,
+      publishedTime: article.date,
+      section: article.category,
+    },
+  };
 }
 
 export default async function ArticlePage({
@@ -38,6 +52,12 @@ export default async function ArticlePage({
 
   return (
     <article className="container-v max-w-3xl py-10">
+      <JsonLd data={articleSchema(article)} />
+      <JsonLd data={breadcrumbSchema([
+        { label: "Accueil", href: "/" },
+        { label: "Blog", href: "/blog" },
+        { label: article.title, href: `/blog/${slug}` },
+      ])} />
       <Link href="/blog" className="inline-flex items-center gap-2 text-sm text-white/55 hover:text-white">
         <ArrowLeft className="h-4 w-4" /> Retour au blog
       </Link>
@@ -64,7 +84,33 @@ export default async function ArticlePage({
         <p className="text-lg text-white/80">{article.excerpt}</p>
 
         {paragraphs ? (
-          paragraphs.map((p, i) => <p key={i}>{p}</p>)
+          (() => {
+            // Regroupe les lignes "- item" consécutives en une seule <ul>.
+            const blocks: ReactNode[] = [];
+            let list: string[] = [];
+            const flushList = () => {
+              if (list.length === 0) return;
+              blocks.push(
+                <ul key={`ul-${blocks.length}`} className="list-disc space-y-2 pl-6">
+                  {list.map((li, j) => <li key={j}>{li}</li>)}
+                </ul>
+              );
+              list = [];
+            };
+            paragraphs.forEach((p, i) => {
+              if (p.startsWith("## ")) {
+                flushList();
+                blocks.push(<h2 key={i} className="text-xl font-semibold text-white">{p.slice(3)}</h2>);
+              } else if (p.startsWith("- ")) {
+                list.push(p.slice(2));
+              } else {
+                flushList();
+                blocks.push(<p key={i}>{p}</p>);
+              }
+            });
+            flushList();
+            return blocks;
+          })()
         ) : (
           <>
             <p>

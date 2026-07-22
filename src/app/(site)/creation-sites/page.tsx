@@ -15,6 +15,7 @@ export const metadata: Metadata = {
   title: "Création de sites internet",
   description:
     "Création de sites vitrines, e-commerce, restaurants, immobilier, portfolios et applications web. Des sites sur mesure, rapides et optimisés pour convertir.",
+  alternates: { canonical: "/creation-sites" },
 };
 
 const TYPES = [

@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "Notre processus",
   description:
     "Découvrez comment nous créons votre site en 7 étapes : prise de contact, analyse, maquette, développement, validation, mise en ligne et suivi.",
+  alternates: { canonical: "/processus" },
 };
 
 export default function ProcessusPage() {

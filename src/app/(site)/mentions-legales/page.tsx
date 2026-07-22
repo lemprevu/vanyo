@@ -5,6 +5,7 @@ import { SITE } from "@/lib/site";
 export const metadata: Metadata = {
   title: "Mentions légales",
   robots: { index: false, follow: true },
+  alternates: { canonical: "/mentions-legales" },
 };
 
 export default function MentionsPage() {

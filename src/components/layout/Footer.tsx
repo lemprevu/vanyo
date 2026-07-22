@@ -11,6 +11,7 @@ const services = [
   { label: "Site restaurant", href: "/creation-sites" },
   { label: "Refonte de site", href: "/creation-sites" },
   { label: "SEO & Référencement", href: "/services" },
+  { label: "Nos villes d'intervention", href: "/villes" },
 ];
 
 export function Footer({ settings }: { settings: SiteSettings }) {

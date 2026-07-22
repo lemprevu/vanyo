@@ -50,7 +50,7 @@ export async function getArticleBySlug(slug: string): Promise<(StaticArticle & {
       const a = data as Article;
       return {
         slug: a.slug, title: a.title, excerpt: a.excerpt ?? "", category: a.category,
-        date: a.published_at, readingTime: a.reading_time, color: a.color, content: a.content,
+        date: a.published_at, readingTime: a.reading_time, color: a.color, content: a.content ?? undefined,
       };
     }
   }

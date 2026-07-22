@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "Blog",
   description:
     "Conseils, tendances et bonnes pratiques sur la création de sites internet, le SEO, le design et la performance web par l'agence Vanyo.",
+  alternates: { canonical: "/blog" },
 };
 
 export const revalidate = 60;

@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: "Demande de devis",
   description:
     "Demandez votre devis gratuit et personnalisé pour la création de votre site internet. Réponse sous quelques heures, sans engagement.",
+  alternates: { canonical: "/devis" },
 };
 
 export const revalidate = 60;

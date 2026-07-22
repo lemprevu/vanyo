@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   title: "Pourquoi Vanyo",
   description:
     "Design moderne, performance, SEO, sécurité, support et accompagnement : découvrez pourquoi tant d'entreprises choisissent Vanyo pour leur site internet.",
+  alternates: { canonical: "/pourquoi-vanyo" },
 };
 
 export const revalidate = 60;

@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: "Réalisations",
   description:
     "Découvrez notre portfolio : sites de restaurants, entreprises, agences immobilières, associations, commerces, portfolios et landing pages réalisés par Vanyo.",
+  alternates: { canonical: "/realisations" },
 };
 
 export const revalidate = 60;

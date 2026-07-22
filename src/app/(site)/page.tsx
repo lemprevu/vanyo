@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Hero } from "@/components/sections/Hero";
 import { StatsBar } from "@/components/sections/StatsBar";
 import { LogosMarquee } from "@/components/sections/LogosMarquee";
@@ -11,8 +12,17 @@ import { PricingWithPromo } from "@/components/sections/PricingWithPromo";
 import { Testimonials } from "@/components/sections/Testimonials";
 import { FaqSection } from "@/components/sections/FaqSection";
 import { getRealisations, getAvis, getPlans, getSiteSettings } from "@/lib/data";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { aggregateRatingSchema } from "@/lib/seo/schema";
 
 export const revalidate = 60;
+
+export const metadata: Metadata = {
+  title: { absolute: "Vanyo — Agence de création de sites internet sur mesure" },
+  description:
+    "Vanyo crée des sites internet modernes, rapides et optimisés SEO pour les artisans, commerces, restaurants et entreprises en France. Devis gratuit, livraison en 12 jours en moyenne.",
+  alternates: { canonical: "/" },
+};
 
 export default async function HomePage() {
   const [projects, testimonials, plans, settings] = await Promise.all([
@@ -22,8 +32,11 @@ export default async function HomePage() {
   // Sections activées depuis /admin/parametres → Apparence.
   const on = (key: string) => settings.home_sections.includes(key);
 
+  const ratingSchema = aggregateRatingSchema(testimonials.map((t) => t.rating));
+
   return (
     <>
+      {ratingSchema && <JsonLd data={ratingSchema} />}
       <Hero />
       {on("stats") && <StatsBar />}
       {on("logos") && <LogosMarquee />}

@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   title: "Tarifs",
   description:
     "Des tarifs transparents pour la création de votre site internet : packs Starter, Business, Premium et Sur Mesure. Devis gratuit et sans engagement.",
+  alternates: { canonical: "/tarifs" },
 };
 
 export const revalidate = 60;

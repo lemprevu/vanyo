@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   title: "Avis clients",
   description:
     "Ce que nos clients pensent de Vanyo : restaurants, entreprises, commerces et associations témoignent de leur expérience.",
+  alternates: { canonical: "/avis" },
 };
 
 export const revalidate = 60;

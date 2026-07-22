@@ -12,7 +12,10 @@ export const SITE = {
   email: "contact@vanyo.fr",
   phone: "+33 6 00 00 00 00",
   phoneHref: "tel:+33600000000",
-  address: "12 rue de l'Innovation, 75008 Paris",
+  // Agence 100% à distance : aucune adresse physique, on ne doit jamais en
+  // afficher une fictive (trompeur pour les visiteurs, pénalisant pour le
+  // référencement local si l'adresse ne correspond à rien de réel).
+  address: "France entière — 100% à distance",
   hours: "Lun – Ven · 9h – 19h",
   socials: {
     instagram: "https://instagram.com",

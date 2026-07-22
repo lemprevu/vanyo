@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   title: "Contact",
   description:
     "Contactez Vanyo pour parler de votre projet de site internet. Réponse sous quelques heures. Devis gratuit et sans engagement.",
+  alternates: { canonical: "/contact" },
 };
 
 export const revalidate = 60;

@@ -2,6 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import { SITE } from "@/lib/site";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { organizationSchema, websiteSchema } from "@/lib/seo/schema";
+import { getSiteSettings } from "@/lib/data";
 
 const geist = Geist({
   variable: "--font-geist-sans",
@@ -50,15 +53,18 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const settings = await getSiteSettings();
   return (
     <html lang="fr" className={`${geist.variable} h-full`}>
       <body
         className="min-h-full flex flex-col font-sans"
         style={{ fontFamily: "var(--font-geist-sans)" }}
       >
+        <JsonLd data={organizationSchema(settings)} />
+        <JsonLd data={websiteSchema()} />
         {children}
       </body>
     </html>
