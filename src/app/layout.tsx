@@ -45,6 +45,14 @@ export const metadata: Metadata = {
     description: SITE.description,
   },
   robots: { index: true, follow: true },
+  // Permet à un client d'ajouter le site (ou son panel admin) à l'écran
+  // d'accueil de son téléphone : icône Vanyo, ouverture en plein écran
+  // sans barre d'adresse, comme une vraie application.
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: SITE.name,
+  },
 };
 
 export const viewport: Viewport = {
