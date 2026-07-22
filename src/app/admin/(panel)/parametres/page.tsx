@@ -4,6 +4,7 @@ import { SettingsTabs } from "./SettingsTabs";
 import { PlansManager } from "./PlansManager";
 import type { Plan } from "@/lib/types";
 import { PLANS as DEMO_PLANS } from "@/lib/content";
+import { requirePermission } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,7 @@ const DEMO_PLAN_ROWS: Plan[] = DEMO_PLANS.map((p, i) => ({
 }));
 
 export default async function Page() {
+  await requirePermission("parametres");
   const supabase = await createClient();
   const live = !!supabase;
 

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { PromoManager } from "./PromoManager";
 import type { PromoCode } from "@/lib/types";
+import { requirePermission } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,7 @@ const DEMO: PromoCode[] = [
 ];
 
 export default async function Page() {
+  await requirePermission("codes-promo");
   const supabase = await createClient();
   if (!supabase) return <PromoManager initial={DEMO} live={false} />;
 

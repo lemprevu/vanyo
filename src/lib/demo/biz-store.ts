@@ -21,6 +21,7 @@ export function buildSeed(config: MetierConfig): BizState {
     smtp_from: null,
     notify_email: null,
     notify_enabled: true,
+    notify_events: ["devis", "messages"],
     pagespeed_api_key: null,
     site_name: config.businessName,
     brand_color: config.accent,

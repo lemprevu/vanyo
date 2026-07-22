@@ -10,6 +10,7 @@ import { StatCard } from "@/components/admin/StatCard";
 import { AreaChart } from "@/components/admin/Charts";
 import { SITE } from "@/lib/site";
 import type { Avis } from "@/lib/types";
+import { requirePermission } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,7 @@ const EXTERNAL_LINKS = [
 ];
 
 export default async function PerformancePage() {
+  await requirePermission("performance");
   const supabase = await createClient();
   const live = !!supabase;
   const settings = await getSiteSettingsFull();

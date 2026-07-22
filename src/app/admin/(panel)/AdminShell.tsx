@@ -6,16 +6,16 @@ import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import {
   LayoutDashboard, FileText, MessageSquare, Image as ImageIcon, Newspaper,
-  Settings, Bell, LogOut, Menu, X, Search, Star, Users, Mail, Ticket, Gauge,
+  Settings, Bell, LogOut, Menu, X, Search, Star, Users, Mail, Ticket, Gauge, ScrollText,
 } from "lucide-react";
 import { RotateCcw } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { LogoMark } from "@/components/Logo";
 import { createClient } from "@/lib/supabase/client";
 
-type NavItem = { label: string; seg: string; icon: LucideIcon; key?: string; badge?: number };
+export type NavItem = { label: string; seg: string; icon: LucideIcon; key?: string; badge?: number };
 
-const NAV: NavItem[] = [
+export const NAV: NavItem[] = [
   { label: "Dashboard", seg: "", icon: LayoutDashboard },
   { label: "Devis", seg: "/devis", icon: FileText, key: "devis" },
   { label: "Messages", seg: "/messages", icon: MessageSquare, key: "messages" },
@@ -25,6 +25,7 @@ const NAV: NavItem[] = [
   { label: "Avis", seg: "/avis", icon: Star },
   { label: "Codes promo", seg: "/codes-promo", icon: Ticket },
   { label: "Utilisateurs", seg: "/utilisateurs", icon: Users },
+  { label: "Journal d'activité", seg: "/journal", icon: ScrollText },
   { label: "Signature email", seg: "/signature", icon: Mail },
   { label: "Paramètres", seg: "/parametres", icon: Settings },
 ];

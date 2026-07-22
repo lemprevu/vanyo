@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { RealisationsManager } from "./RealisationsManager";
 import type { Realisation } from "@/lib/types";
 import { PROJECTS } from "@/lib/content";
+import { requirePermission } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,7 @@ const DEMO: Realisation[] = PROJECTS.map((p, i) => ({
 }));
 
 export default async function Page() {
+  await requirePermission("realisations");
   const supabase = await createClient();
   if (!supabase) return <RealisationsManager initial={DEMO} live={false} />;
 

@@ -66,7 +66,8 @@ export async function POST(request: Request) {
         ["Sujet", record.sujet ?? ""],
       ],
       record.message
-    )
+    ),
+    { eventType: "messages" }
   );
 
   return NextResponse.json({ ok: true, persisted: true });

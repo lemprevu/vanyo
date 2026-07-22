@@ -53,10 +53,26 @@ export type Plan = {
 export const ADMIN_ROLES = ["Administrateur", "Modérateur", "Commercial"] as const;
 export type AdminRole = (typeof ADMIN_ROLES)[number];
 
+/** Sections du panel qu'on peut accorder individuellement à un rôle non-Administrateur. */
+export const PERMISSION_SECTIONS = [
+  { key: "devis", label: "Devis" },
+  { key: "messages", label: "Messages" },
+  { key: "realisations", label: "Réalisations" },
+  { key: "blog", label: "Blog" },
+  { key: "avis", label: "Avis clients" },
+  { key: "codes-promo", label: "Codes promo" },
+  { key: "signature", label: "Signature email" },
+  { key: "parametres", label: "Paramètres" },
+  { key: "performance", label: "Performance & SEO" },
+] as const;
+export type PermissionKey = (typeof PERMISSION_SECTIONS)[number]["key"];
+
 export type AdminProfile = {
   id: string;
   email: string | null;
   role: AdminRole;
+  /** Vide pour un Administrateur (accès total implicite) ; sinon liste des sections autorisées. */
+  permissions: PermissionKey[];
   created_at: string;
 };
 
@@ -135,6 +151,8 @@ export type SiteSettingsFull = SiteSettings & {
   notify_email: string | null;
   /** Active/désactive l'envoi des emails de notification, indépendamment de la config SMTP. */
   notify_enabled: boolean;
+  /** Types d'événements pour lesquels un email est envoyé (sous-ensemble de ["devis","messages"]). */
+  notify_events: string[];
   /** Clé API PageSpeed Insights (Google Cloud), optionnelle — voir /admin/performance. */
   pagespeed_api_key: string | null;
 };

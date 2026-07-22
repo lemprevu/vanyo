@@ -1,5 +1,6 @@
 import { Mail } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { requirePermission } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,7 @@ const DEMO: Message[] = [
 ];
 
 export default async function MessagesPage() {
+  await requirePermission("messages");
   const supabase = await createClient();
   let messages = DEMO;
   let live = false;

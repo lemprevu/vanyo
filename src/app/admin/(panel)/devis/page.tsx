@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { DevisManager } from "./DevisManager";
 import type { Devis } from "@/lib/devis";
+import { requirePermission } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,7 @@ const DEMO: Devis[] = [
 ];
 
 export default async function AdminDevisPage() {
+  await requirePermission("devis");
   const supabase = await createClient();
 
   if (!supabase) {

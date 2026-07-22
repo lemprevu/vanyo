@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { AvisManager } from "./AvisManager";
 import type { Avis } from "@/lib/types";
 import { TESTIMONIALS } from "@/lib/content";
+import { requirePermission } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ const DEMO: Avis[] = TESTIMONIALS.map((t, i) => ({
 }));
 
 export default async function Page() {
+  await requirePermission("avis");
   const supabase = await createClient();
   if (!supabase) return <AvisManager initial={DEMO} live={false} />;
 

@@ -231,7 +231,7 @@ export function SettingsTabs({ initial, live, onChange }: { initial: SiteSetting
                 onClick={() => set("promo_active", !v.promo_active)}
                 className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${v.promo_active ? "bg-vanyo-500" : "bg-white/15"}`}
               >
-                <span className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-transform ${v.promo_active ? "translate-x-6" : "translate-x-1"}`} />
+                <span className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-all ${v.promo_active ? "left-6" : "left-1"}`} />
               </button>
             </div>
 
@@ -316,8 +316,33 @@ export function SettingsTabs({ initial, live, onChange }: { initial: SiteSetting
                 onClick={() => set("notify_enabled", !v.notify_enabled)}
                 className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${v.notify_enabled ? "bg-vanyo-500" : "bg-white/15"}`}
               >
-                <span className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-transform ${v.notify_enabled ? "translate-x-6" : "translate-x-1"}`} />
+                <span className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-all ${v.notify_enabled ? "left-6" : "left-1"}`} />
               </button>
+            </div>
+
+            <div className={`flex flex-wrap gap-3 transition-opacity ${v.notify_enabled ? "" : "pointer-events-none opacity-40"}`}>
+              {[
+                { key: "devis", label: "Nouvelles demandes de devis" },
+                { key: "messages", label: "Nouveaux messages de contact" },
+              ].map((evt) => {
+                const active = v.notify_events.includes(evt.key);
+                return (
+                  <label key={evt.key} className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm text-white/75">
+                    <input
+                      type="checkbox"
+                      checked={active}
+                      onChange={() =>
+                        set(
+                          "notify_events",
+                          active ? v.notify_events.filter((e) => e !== evt.key) : [...v.notify_events, evt.key]
+                        )
+                      }
+                      className="h-4 w-4 accent-vanyo-500"
+                    />
+                    {evt.label}
+                  </label>
+                );
+              })}
             </div>
 
             <div className={`grid gap-4 sm:grid-cols-2 transition-opacity ${v.notify_enabled ? "" : "pointer-events-none opacity-40"}`}>

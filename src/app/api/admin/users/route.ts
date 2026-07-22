@@ -1,21 +1,39 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { req, str } from "@/lib/validate";
-import { ADMIN_ROLES, type AdminRole } from "@/lib/types";
+import { ADMIN_ROLES, PERMISSION_SECTIONS, type AdminRole, type PermissionKey } from "@/lib/types";
+import { logActivity } from "@/lib/activityLog";
 
-/** Vérifie qu'un administrateur est bien connecté avant toute action privilégiée. */
-async function requireAdmin() {
+/**
+ * Vérifie qu'un Administrateur est bien connecté avant toute action
+ * privilégiée. La gestion des comptes reste réservée aux Administrateurs :
+ * l'accorder à un rôle inférieur ouvrirait une élévation de privilèges
+ * (un Modérateur pourrait sinon se créer un accès Administrateur).
+ */
+async function requireAdministrateur() {
   const supabase = await createClient();
   if (!supabase) return null;
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  return user ? supabase : null;
+  if (!user) return null;
+
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  if (profile?.role !== "Administrateur") return null;
+
+  return { supabase, user };
 }
 
-/** Crée un nouveau compte admin (email + mot de passe + rôle). */
+const VALID_PERMISSIONS = new Set(PERMISSION_SECTIONS.map((p) => p.key));
+
+function parsePermissions(value: unknown): PermissionKey[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((v): v is PermissionKey => typeof v === "string" && VALID_PERMISSIONS.has(v as PermissionKey));
+}
+
+/** Crée un nouveau compte admin (email + mot de passe + rôle + permissions). */
 export async function POST(request: Request) {
-  const caller = await requireAdmin();
+  const caller = await requireAdministrateur();
   if (!caller) return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
 
   let body: Record<string, unknown>;
@@ -28,6 +46,7 @@ export async function POST(request: Request) {
   const email = req(body.email, 254);
   const password = str(body.password, 200);
   const role = (str(body.role, 40) as AdminRole) || "Administrateur";
+  const permissions = parsePermissions(body.permissions);
 
   if (!email || !password || password.length < 8) {
     return NextResponse.json(
@@ -53,7 +72,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error?.message || "Impossible de créer le compte." }, { status: 400 });
   }
 
-  await admin.from("profiles").update({ role }).eq("id", data.user.id);
+  await admin.from("profiles").update({ role, permissions }).eq("id", data.user.id);
+
+  await logActivity(request, {
+    userId: caller.user.id,
+    email: caller.user.email,
+    action: "user.create",
+    resourceLabel: `${email} créé avec le rôle ${role}`,
+    details: { permissions },
+  });
 
   return NextResponse.json({ ok: true, id: data.user.id });
 }

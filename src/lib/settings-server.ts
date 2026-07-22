@@ -19,6 +19,7 @@ export async function getSiteSettingsFull(): Promise<SiteSettingsFull> {
     smtp_from: null,
     notify_email: null,
     notify_enabled: true,
+    notify_events: ["devis", "messages"],
     pagespeed_api_key: null,
   };
 

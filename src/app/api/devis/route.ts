@@ -125,7 +125,8 @@ export async function POST(request: Request) {
         ["Options", [...(record.options ?? []), record.pages_supplementaires ? `${record.pages_supplementaires} page(s) sup.` : ""].filter(Boolean).join(", ")],
       ],
       record.description ?? ""
-    )
+    ),
+    { eventType: "devis" }
   );
 
   return NextResponse.json({ ok: true, persisted: true });

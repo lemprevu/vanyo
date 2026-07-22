@@ -1,6 +1,11 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { AdminShell } from "./AdminShell";
+import { AdminShell, NAV } from "./AdminShell";
+import { getCurrentAdminProfile, canAccess } from "@/lib/permissions";
+import type { PermissionKey } from "@/lib/types";
+
+/** Utilisateurs et Journal d'activité restent réservés aux Administrateurs, non attribuables. */
+const ADMIN_ONLY_SEGMENTS = new Set(["/utilisateurs", "/journal"]);
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +39,16 @@ export default async function PanelLayout({
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/admin/login");
+
+  const profile = await getCurrentAdminProfile();
+  const isAdministrateur = !profile || profile.role === "Administrateur";
+  const navItems = isAdministrateur
+    ? NAV
+    : NAV.filter((item) => {
+        if (item.seg === "") return true; // Dashboard toujours visible
+        if (ADMIN_ONLY_SEGMENTS.has(item.seg)) return false;
+        return canAccess(profile, item.seg.slice(1) as PermissionKey);
+      });
 
   // Compteurs "non traités"
   const [{ count: devisCount }, { count: msgCount }] = await Promise.all([
@@ -72,6 +87,7 @@ export default async function PanelLayout({
       live
       counts={{ devis: devisCount ?? 0, messages: msgCount ?? 0 }}
       notifications={notifications}
+      navItems={navItems}
     >
       {children}
     </AdminShell>
