@@ -4,6 +4,12 @@ const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
   },
+  // lucide-react et motion exportent des centaines de modules depuis un seul
+  // point d'entrée ; sans ça, importer une seule icône peut faire entrer
+  // tout le paquet dans le bundle. Force un import "à la pièce".
+  experimental: {
+    optimizePackageImports: ["lucide-react", "motion", "motion/react"],
+  },
   async headers() {
     return [
       {
