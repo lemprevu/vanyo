@@ -6,7 +6,11 @@
 export const SITE = {
   name: "Vanyo",
   tagline: "Agence web premium",
-  domain: "https://vanyo.fr",
+  // vanyo.fr redirige (308) vers www.vanyo.fr côté Vercel : c'est ce dernier
+  // qui doit être la référence partout (canonical, sitemap, JSON-LD). Une
+  // URL canonique qui pointe vers un domaine qui redirige ailleurs crée une
+  // incohérence que Google (et Search Console) n'aime pas.
+  domain: "https://www.vanyo.fr",
   description:
     "Vanyo conçoit des sites internet modernes, rapides et pensés pour convertir vos visiteurs en clients. Sites vitrines, e-commerce, restaurants, immobilier, portfolios et applications web sur mesure.",
   email: "contact@vanyo.fr",
