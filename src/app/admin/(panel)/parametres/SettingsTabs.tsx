@@ -278,6 +278,17 @@ export function SettingsTabs({ initial, live, onChange }: { initial: SiteSetting
                 <FieldGroup label="Clé secrète"><Input type="password" value={v.turnstile_secret ?? ""} onChange={field("turnstile_secret")} /></FieldGroup>
               </div>
             </div>
+            <div className="border-t border-white/8 pt-4">
+              <p className="mb-1 text-sm font-medium text-white/70">Google PageSpeed Insights (section Performance)</p>
+              <p className="mb-3 text-xs text-white/40">
+                Optionnelle et gratuite — sans elle, la section Performance ne peut pas afficher de vrai score
+                Core Web Vitals (l&apos;API publique sans clé est trop vite limitée). Créez-en une en 2 minutes sur{" "}
+                <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-vanyo-200 hover:text-white">
+                  console.cloud.google.com
+                </a>{" "}(API à activer : &laquo; PageSpeed Insights API &raquo;).
+              </p>
+              <FieldGroup label="Clé API"><Input type="password" value={v.pagespeed_api_key ?? ""} onChange={field("pagespeed_api_key")} placeholder="AIza..." /></FieldGroup>
+            </div>
           </div>
         )}
 

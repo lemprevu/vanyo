@@ -18,6 +18,7 @@ export async function getSiteSettingsFull(): Promise<SiteSettingsFull> {
     smtp_password: null,
     smtp_from: null,
     notify_email: null,
+    pagespeed_api_key: null,
   };
 
   const supabase = createServiceClient();

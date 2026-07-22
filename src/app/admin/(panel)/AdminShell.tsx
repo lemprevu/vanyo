@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import {
   LayoutDashboard, FileText, MessageSquare, Image as ImageIcon, Newspaper,
-  Settings, Bell, LogOut, Menu, X, Search, Star, Users, Mail, Ticket,
+  Settings, Bell, LogOut, Menu, X, Search, Star, Users, Mail, Ticket, Gauge,
 } from "lucide-react";
 import { RotateCcw } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -19,6 +19,7 @@ const NAV: NavItem[] = [
   { label: "Dashboard", seg: "", icon: LayoutDashboard },
   { label: "Devis", seg: "/devis", icon: FileText, key: "devis" },
   { label: "Messages", seg: "/messages", icon: MessageSquare, key: "messages" },
+  { label: "Performance & SEO", seg: "/performance", icon: Gauge },
   { label: "Réalisations", seg: "/realisations", icon: ImageIcon },
   { label: "Blog", seg: "/blog", icon: Newspaper },
   { label: "Avis", seg: "/avis", icon: Star },

@@ -15,7 +15,11 @@ export const revalidate = 60;
 export async function generateMetadata(): Promise<Metadata> {
   const s = await getSiteSettings();
   const ogDesc = s.og_description || s.meta_description || s.description || undefined;
-  const ogImages = s.og_image ? [{ url: s.og_image }] : undefined;
+  // Définir `openGraph`/`twitter` ici (même sans image) empêche Next de
+  // rattacher automatiquement l'image générée par opengraph-image.tsx —
+  // on pointe donc explicitement dessus tant qu'aucune image n'est
+  // configurée en admin, pour ne jamais partager un lien sans vignette.
+  const ogImages = [{ url: s.og_image || "/opengraph-image" }];
 
   return {
     title: s.og_title || undefined,

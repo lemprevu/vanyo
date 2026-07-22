@@ -20,6 +20,7 @@ export function buildSeed(config: MetierConfig): BizState {
     smtp_password: null,
     smtp_from: null,
     notify_email: null,
+    pagespeed_api_key: null,
     site_name: config.businessName,
     brand_color: config.accent,
     ...config.settings,
