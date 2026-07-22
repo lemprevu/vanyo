@@ -135,23 +135,25 @@ export function SettingsTabs({ initial, live, onChange }: { initial: SiteSetting
                 </Select>
               </FieldGroup>
             </div>
-            <div>
-              <Label>Sections affichées sur la page d'accueil</Label>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {HOME_SECTIONS.map((s) => {
-                  const active = v.home_sections.includes(s.key);
-                  return (
-                    <button key={s.key} type="button" onClick={() => toggleSection(s.key)}
-                      className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm transition-all ${active ? "border-vanyo-500/70 bg-vanyo-500/15 text-white" : "border-white/10 text-white/55"}`}>
-                      <span className={`flex h-4 w-4 items-center justify-center rounded border ${active ? "border-vanyo-400 bg-vanyo-500" : "border-white/25"}`}>
-                        {active && <CheckCircle2 className="h-3 w-3 text-white" />}
-                      </span>
-                      {s.label}
-                    </button>
-                  );
-                })}
+            {!demo && (
+              <div>
+                <Label>Sections affichées sur la page d'accueil</Label>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {HOME_SECTIONS.map((s) => {
+                    const active = v.home_sections.includes(s.key);
+                    return (
+                      <button key={s.key} type="button" onClick={() => toggleSection(s.key)}
+                        className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm transition-all ${active ? "border-vanyo-500/70 bg-vanyo-500/15 text-white" : "border-white/10 text-white/55"}`}>
+                        <span className={`flex h-4 w-4 items-center justify-center rounded border ${active ? "border-vanyo-400 bg-vanyo-500" : "border-white/25"}`}>
+                          {active && <CheckCircle2 className="h-3 w-3 text-white" />}
+                        </span>
+                        {s.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
