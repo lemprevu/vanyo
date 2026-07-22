@@ -1,30 +1,17 @@
-"use client";
+import type { Metadata } from "next";
+import { MetierClientLayout } from "./MetierClientLayout";
 
-import Link from "next/link";
-import { useParams } from "next/navigation";
-import { getMetier } from "@/lib/demo/metiers";
-import { BizProvider } from "@/lib/demo/BizProvider";
-import { BizShell } from "./BizShell";
+// Toutes les pages de démonstration (tableaux de bord fictifs par métier)
+// doivent rester hors index : ce sont des données de démo, pas du contenu
+// réel — les laisser indexables diluerait la qualité perçue du site aux
+// yeux de Google (des dizaines de pages quasi identiques, sans valeur pour
+// un chercheur). Ce fichier est un composant serveur uniquement pour
+// pouvoir exporter `metadata` ; toute la logique interactive reste dans
+// MetierClientLayout (client component).
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default function MetierLayout({ children }: { children: React.ReactNode }) {
-  const params = useParams();
-  const id = String(params.metier);
-  const config = getMetier(id);
-
-  if (!config) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-ink px-6 text-center text-white">
-        <p className="text-lg font-semibold">Secteur de démonstration introuvable.</p>
-        <Link href="/demo" className="btn-premium btn-primary px-5 py-2.5 text-sm">
-          Choisir un secteur
-        </Link>
-      </div>
-    );
-  }
-
-  return (
-    <BizProvider config={config}>
-      <BizShell>{children}</BizShell>
-    </BizProvider>
-  );
+  return <MetierClientLayout>{children}</MetierClientLayout>;
 }
