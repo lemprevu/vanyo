@@ -4,10 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
   Search, Eye, Trash2, X, Mail, Phone, MapPin, Building2,
-  Calendar, Euro, Printer, Save,
+  Calendar, Euro, Printer, Save, Wand2,
 } from "lucide-react";
 import { DEVIS_STATUSES, STATUS_STYLES, type Devis, type DevisStatus } from "@/lib/devis";
 import { createClient } from "@/lib/supabase/client";
+import { suggestQuote } from "@/lib/quote";
+import { DevisMockupPreview } from "@/components/demo/DevisMockupPreview";
 
 export function DevisManager({ initial, live, onChange }: { initial: Devis[]; live: boolean; onChange?: (rows: Devis[]) => void }) {
   const [rows, setRows] = useState<Devis[]>(initial);
@@ -34,6 +36,8 @@ export function DevisManager({ initial, live, onChange }: { initial: Devis[]; li
       return matchFilter && matchQuery;
     });
   }, [rows, query, filter]);
+
+  const quote = useMemo(() => (selected ? suggestQuote(selected) : null), [selected]);
 
   const counts = useMemo(() => {
     const map: Record<string, number> = { Tous: rows.length };
@@ -202,6 +206,38 @@ export function DevisManager({ initial, live, onChange }: { initial: Devis[]; li
               </div>
 
               <div className="mt-6 space-y-4">
+                {quote && (
+                  <Section title="Estimation & aperçu générés">
+                    <div className="flex items-baseline justify-between">
+                      <span className="flex items-center gap-1.5 text-sm text-white/60">
+                        <Wand2 className="h-4 w-4 text-vanyo-400" /> Prix suggéré
+                      </span>
+                      <span className="text-2xl font-bold text-white">{quote.total.toLocaleString("fr-FR")} €</span>
+                    </div>
+                    <div className="space-y-1 border-t border-white/8 pt-2 text-xs">
+                      {quote.lines.map((l) => (
+                        <div key={l.label} className="flex justify-between text-white/50">
+                          <span>{l.label}</span>
+                          <span>+{l.amount} €</span>
+                        </div>
+                      ))}
+                    </div>
+                    {quote.belowClientBudget && (
+                      <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                        Le budget annoncé ({selected.budget}) est nettement en dessous de l&apos;estimation — à
+                        clarifier avec le client (réduire le périmètre ou ajuster le budget).
+                      </p>
+                    )}
+                    <div className="pt-2">
+                      <DevisMockupPreview devis={selected} />
+                    </div>
+                    <p className="text-[11px] text-white/35">
+                      Estimation automatique à partir des réponses du formulaire — un point de départ pour
+                      l&apos;échange, pas un prix à annoncer tel quel.
+                    </p>
+                  </Section>
+                )}
+
                 <Section title="Coordonnées">
                   <Info icon={Mail} value={selected.email} href={`mailto:${selected.email}`} />
                   {selected.telephone && <Info icon={Phone} value={selected.telephone} href={`tel:${selected.telephone}`} />}

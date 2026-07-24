@@ -28,7 +28,7 @@ export function CollectionManager({
 
   useEffect(() => { onChange(items); }, [items]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const listFields = section.fields.filter((f) => !f.hideInList && f.key !== section.titleField && f.key !== section.colorField);
+  const listFields = section.fields.filter((f) => !f.hideInList && f.key !== section.titleField && f.key !== section.colorField && f.key !== section.imageField);
   const layout = section.layout ?? "grid";
 
   function openNew() {
@@ -57,6 +57,8 @@ export function CollectionManager({
   const title = (r: Row) => String(r[section.titleField] ?? "Sans titre");
   const colorClass = (r: Row) =>
     section.colorField && r[section.colorField] ? String(r[section.colorField]) : "from-vanyo-500/30 to-violet-hi/30";
+  const image = (r: Row) =>
+    section.imageField && r[section.imageField] ? String(r[section.imageField]) : null;
 
   const titleValid = String(draft[section.titleField] ?? "").trim().length > 0;
 
@@ -77,9 +79,16 @@ export function CollectionManager({
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((r) => (
             <div key={r.id} className="gradient-border overflow-hidden rounded-2xl bg-ink-card/60">
-              <div className={`relative flex aspect-[16/9] items-center justify-center bg-gradient-to-br ${colorClass(r)}`}>
-                <div className="absolute inset-0 bg-grid opacity-30" />
-                <span className="relative px-3 text-center text-lg font-bold text-white/85">{title(r)}</span>
+              <div className={`relative flex aspect-[16/9] items-center justify-center overflow-hidden bg-gradient-to-br ${colorClass(r)}`}>
+                {image(r) ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={image(r)!} alt={title(r)} className="absolute inset-0 h-full w-full object-cover" />
+                ) : (
+                  <>
+                    <div className="absolute inset-0 bg-grid opacity-30" />
+                    <span className="relative px-3 text-center text-lg font-bold text-white/85">{title(r)}</span>
+                  </>
+                )}
               </div>
               <div className="space-y-1.5 p-4">
                 {listFields.slice(0, 3).map((f) => (
@@ -103,7 +112,12 @@ export function CollectionManager({
         <div className="gradient-border overflow-hidden rounded-2xl bg-ink-card/60">
           {items.map((r) => (
             <div key={r.id} className="flex items-center gap-4 border-b border-white/5 p-4 last:border-0">
-              <div className={`h-12 w-16 shrink-0 rounded-lg bg-gradient-to-br ${colorClass(r)}`} />
+              <div className={`h-12 w-16 shrink-0 overflow-hidden rounded-lg bg-gradient-to-br ${colorClass(r)}`}>
+                {image(r) && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={image(r)!} alt={title(r)} className="h-full w-full object-cover" />
+                )}
+              </div>
               <div className="min-w-0 flex-1">
                 <h3 className="truncate font-medium text-white">{title(r)}</h3>
                 <p className="mt-0.5 truncate text-xs text-white/45">

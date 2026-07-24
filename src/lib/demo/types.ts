@@ -11,7 +11,7 @@ import type { SiteSettingsFull } from "@/lib/types";
 /** Un champ éditable d'une fiche ou d'une demande. */
 export type FieldType =
   | "text" | "textarea" | "number" | "price"
-  | "select" | "tags" | "boolean" | "date" | "color" | "rating";
+  | "select" | "tags" | "boolean" | "date" | "color" | "rating" | "image";
 
 export type FieldDef = {
   key: string;
@@ -41,6 +41,7 @@ export type CollectionSection = {
   layout?: "grid" | "list";
   fields: FieldDef[];
   colorField?: string;        // champ couleur/dégradé pour le visuel
+  imageField?: string;        // champ photo (prioritaire sur colorField si renseigné)
   seed: Row[];
 };
 
@@ -85,6 +86,48 @@ export type SettingsSection = {
   icon: LucideIcon;
 };
 
+/** Section « blog » (réutilise le gestionnaire d'articles existant). */
+export type BlogSection = {
+  type: "blog";
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  seed: Row[];
+};
+
+/** Section « utilisateurs » (accès admin, rôles, permissions). */
+export type UsersSection = {
+  type: "users";
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  seed: Row[];
+};
+
+/** Section « signature email » (générateur, pas de données propres). */
+export type SignatureSection = {
+  type: "signature";
+  id: string;
+  label: string;
+  icon: LucideIcon;
+};
+
+/** Section « performance & SEO » (indicateurs illustratifs, pas de données propres). */
+export type PerformanceSection = {
+  type: "performance";
+  id: string;
+  label: string;
+  icon: LucideIcon;
+};
+
+/** Section « journal d'activité » (dérivée des autres sections, pas de données propres). */
+export type JournalSection = {
+  type: "journal";
+  id: string;
+  label: string;
+  icon: LucideIcon;
+};
+
 /**
  * Section « planning » : vue calendrier/agenda. Ne stocke pas ses propres
  * données — elle lit et écrit celles d'une section « demandes » (sourceId),
@@ -101,7 +144,8 @@ export type PlanningSection = {
 };
 
 export type Section =
-  | CollectionSection | RequestsSection | ReviewsSection | MessagesSection | SettingsSection | PlanningSection;
+  | CollectionSection | RequestsSection | ReviewsSection | MessagesSection | SettingsSection | PlanningSection
+  | BlogSection | UsersSection | SignatureSection | PerformanceSection | JournalSection;
 
 /** Configuration complète d'un métier. */
 export type MetierConfig = {

@@ -30,8 +30,11 @@ export function buildSeed(config: MetierConfig): BizState {
 
   const collections: Record<string, Row[]> = {};
   for (const section of config.sections) {
-    // Réglages et planning n'ont pas de données propres.
-    if (section.type === "settings" || section.type === "planning") continue;
+    // Réglages, planning, signature, performance et journal n'ont pas de données propres.
+    if (
+      section.type === "settings" || section.type === "planning" ||
+      section.type === "signature" || section.type === "performance" || section.type === "journal"
+    ) continue;
     collections[section.id] = (section.seed ?? []).map((r) => ({ ...r }));
   }
 

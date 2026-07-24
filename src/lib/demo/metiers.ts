@@ -7,14 +7,49 @@ import {
   UtensilsCrossed, CalendarClock, Image as ImageIcon, Star, Mail, Settings,
   Building2, Key, ShoppingBag, Package, Ticket, Wrench, ClipboardList, Hammer,
   Scissors, Sparkles, Users, Stethoscope, CalendarDays, Newspaper, HandHeart,
-  Camera, Aperture, Leaf, Store, Car, Gauge,
+  Camera, Aperture, Leaf, Store, Car, Gauge, ScrollText, FileSignature,
 } from "lucide-react";
-import type { MetierConfig, Row } from "./types";
+import type { MetierConfig, Row, Section } from "./types";
 
 // Horodatages relatifs figés à l'évaluation du module.
 const t0 = Date.now();
 const ago = (ms: number) => new Date(t0 - ms).toISOString();
 const H = 3600_000, D = 24 * H;
+
+const ADMIN_UID = "u0";
+
+/** Sections communes à tous les métiers, alignées sur le vrai panel admin Vanyo. */
+const commonSections = (): Section[] => [
+  {
+    type: "blog", id: "blog", label: "Blog", icon: Newspaper,
+    seed: [
+      {
+        id: "a1", created_at: ago(4 * D), slug: "3-conseils-pour-votre-site",
+        title: "3 conseils pour un site qui convertit", excerpt: "Les leviers simples à ne pas négliger.",
+        content: "Un site rapide, clair et à jour transforme bien plus de visiteurs en clients.",
+        category: "Conseils", color: "from-vanyo-500/30 to-violet-hi/30", reading_time: "4 min",
+        published: true, published_at: "2026-07-10",
+      },
+      {
+        id: "a2", created_at: ago(10 * D), slug: "nouveautes-de-la-saison",
+        title: "Les nouveautés de la saison", excerpt: "Ce qui change ce trimestre.",
+        content: "Un point sur les évolutions récentes.", category: "Conseils",
+        color: "from-amber-500/30 to-vanyo-500/30", reading_time: "3 min",
+        published: false, published_at: "2026-07-01",
+      },
+    ],
+  },
+  {
+    type: "users", id: "utilisateurs", label: "Utilisateurs", icon: Users,
+    seed: [
+      { id: ADMIN_UID, created_at: ago(60 * D), email: "contact@exemple.fr", role: "Administrateur", permissions: [] },
+      { id: "u1", created_at: ago(12 * D), email: "collegue@exemple.fr", role: "Modérateur", permissions: ["messages", "avis"] },
+    ],
+  },
+  { type: "performance", id: "performance", label: "Performance & SEO", icon: Gauge },
+  { type: "signature", id: "signature", label: "Signature email", icon: FileSignature },
+  { type: "journal", id: "journal", label: "Journal d'activité", icon: ScrollText },
+];
 
 const reviews = (arr: [string, string, number, string][]): Row[] =>
   arr.map(([name, company, rating, quote], i) => ({
@@ -102,6 +137,7 @@ export const METIERS: MetierConfig[] = [
         ["Julien Roy", "julien@mail.fr", "Allergies", "Proposez-vous des plats sans lactose ? Merci.", true],
       ]) },
       { type: "settings", id: "parametres", label: "Paramètres", icon: Settings },
+      ...commonSections(),
     ],
   },
 
@@ -162,6 +198,7 @@ export const METIERS: MetierConfig[] = [
         ["Paul Girard", "paul@mail.fr", "Estimation", "Bonjour, j'aimerais faire estimer ma maison à Caudéran.", false],
       ]) },
       { type: "settings", id: "parametres", label: "Paramètres", icon: Settings },
+      ...commonSections(),
     ],
   },
 
@@ -233,6 +270,7 @@ export const METIERS: MetierConfig[] = [
         ["Nadia K.", "nadia@mail.fr", "Réassort", "Bonjour, le vase terracotta sera-t-il bientôt réapprovisionné ?", false],
       ]) },
       { type: "settings", id: "parametres", label: "Paramètres", icon: Settings },
+      ...commonSections(),
     ],
   },
 
@@ -303,6 +341,7 @@ export const METIERS: MetierConfig[] = [
         ["Karim B.", "karim@mail.fr", "Disponibilité", "Bonjour, intervenez-vous à Muret pour un dégât des eaux ?", false],
       ]) },
       { type: "settings", id: "parametres", label: "Paramètres", icon: Settings },
+      ...commonSections(),
     ],
   },
 
@@ -372,6 +411,7 @@ export const METIERS: MetierConfig[] = [
         ["Camille V.", "camille@mail.fr", "Mariage", "Bonjour, faites-vous les coiffures de mariée à domicile ?", false],
       ]) },
       { type: "settings", id: "parametres", label: "Paramètres", icon: Settings },
+      ...commonSections(),
     ],
   },
 
@@ -437,6 +477,7 @@ export const METIERS: MetierConfig[] = [
         ["Marie D.", "marie@mail.fr", "Résultats", "Bonjour, mes résultats d'analyse sont-ils disponibles ?", false],
       ]) },
       { type: "settings", id: "parametres", label: "Paramètres", icon: Settings },
+      ...commonSections(),
     ],
   },
 
@@ -503,6 +544,7 @@ export const METIERS: MetierConfig[] = [
         ["Mairie de Lille", "culture@mail.fr", "Partenariat", "Nous aimerions vous proposer un partenariat pour 2027.", false],
       ]) },
       { type: "settings", id: "parametres", label: "Paramètres", icon: Settings },
+      ...commonSections(),
     ],
   },
 
@@ -574,6 +616,7 @@ export const METIERS: MetierConfig[] = [
         ["Julie P.", "julie@mail.fr", "Disponibilité août", "Bonjour, êtes-vous libre le 22 août pour un portrait famille ?", false],
       ]) },
       { type: "settings", id: "parametres", label: "Paramètres", icon: Settings },
+      ...commonSections(),
     ],
   },
 
@@ -627,9 +670,10 @@ export const METIERS: MetierConfig[] = [
       },
       {
         type: "collection", id: "occasions", label: "Véhicules d'occasion", icon: Gauge,
-        itemLabel: "un véhicule", titleField: "titre", layout: "grid", colorField: "color",
+        itemLabel: "un véhicule", titleField: "titre", layout: "grid", colorField: "color", imageField: "image",
         fields: [
           { key: "titre", label: "Titre de l'annonce", type: "text", required: true },
+          { key: "image", label: "Photo du véhicule", type: "image", hideInList: true },
           { key: "prix", label: "Prix", type: "price", suffix: " €" },
           { key: "annee", label: "Année", type: "text" },
           { key: "kilometrage", label: "Kilométrage", type: "text", placeholder: "45 000 km" },
@@ -652,6 +696,7 @@ export const METIERS: MetierConfig[] = [
         ["Antoine V.", "antoine@mail.fr", "Rachat véhicule", "Bonjour, reprenez-vous les anciens véhicules à l'achat d'une occasion ?", false],
       ]) },
       { type: "settings", id: "parametres", label: "Paramètres", icon: Settings },
+      ...commonSections(),
     ],
   },
 ];

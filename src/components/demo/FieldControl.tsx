@@ -1,6 +1,6 @@
 "use client";
 
-import { Star } from "lucide-react";
+import { Star, ImageOff, Upload } from "lucide-react";
 import { Label, Input, Textarea, Select } from "@/components/ui/Field";
 import { COLOR_PRESETS } from "@/lib/types";
 import type { FieldDef, Row } from "@/lib/demo/types";
@@ -82,6 +82,41 @@ export function FieldControl({
         </div>
       )}
 
+      {field.type === "image" && (
+        <div className="flex items-center gap-3">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/10">
+            {value ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={value as string} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <ImageOff className="h-5 w-5 text-white/25" />
+            )}
+          </div>
+          <label className="glass flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs text-white/70 hover:text-white">
+            <Upload className="h-3.5 w-3.5" />
+            {value ? "Changer la photo" : "Ajouter une photo"}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = () => onChange(reader.result as string);
+                reader.readAsDataURL(file);
+                e.target.value = "";
+              }}
+            />
+          </label>
+          {!!value && (
+            <button type="button" onClick={() => onChange("")} className="text-xs text-white/40 hover:text-rose-300">
+              Retirer
+            </button>
+          )}
+        </div>
+      )}
+
       {field.type === "boolean" && (
         <label className="flex cursor-pointer items-center gap-2.5 text-sm text-white/70">
           <input
@@ -101,6 +136,7 @@ export function FieldControl({
 export function displayValue(field: FieldDef, row: Row): string {
   const v = row[field.key];
   if (v === undefined || v === null || v === "") return "—";
+  if (field.type === "image") return "Photo ajoutée";
   if (field.type === "boolean") return v ? "Oui" : "Non";
   if (field.type === "tags" && Array.isArray(v)) return v.join(", ");
   if (field.type === "price") return `${v}${field.suffix ?? " €"}`;
@@ -117,6 +153,7 @@ export function emptyValue(field: FieldDef): unknown {
     case "number": case "price": return "";
     case "select": return field.options?.[0] ?? "";
     case "color": return COLOR_PRESETS[0].value;
+    case "image": return "";
     default: return "";
   }
 }
