@@ -89,8 +89,15 @@ export type Pack = {
   key: string;
   name: string;
   tagline: string;
-  /** Prix de base, ou null pour « Sur devis ». */
+  /** Prix de base affiché, ou null pour « Sur devis ». */
   base: number | null;
+  /**
+   * Base retenue pour l'estimation interne quand `base` est null.
+   * Le client voit « Sur devis », mais le panel doit quand même proposer un
+   * montant de départ : sans lui, une demande sur mesure arrivait sans aucun
+   * chiffre et il n'y avait rien sur quoi s'appuyer.
+   */
+  internalBase?: number;
   /** Prix conseillé barré, pour afficher la remise. */
   originalPrice?: number | null;
   pagesIncluded: number;
@@ -162,6 +169,7 @@ const DEFAULT_PACKS: Pack[] = [
     name: "Sur Mesure",
     tagline: "Application web, plateforme ou besoin spécifique.",
     base: null,
+    internalBase: 2400,
     originalPrice: null,
     pagesIncluded: PAGES_UNLIMITED,
     pagesLabel: "Illimité",

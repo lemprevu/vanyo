@@ -142,7 +142,9 @@ export async function POST(request: Request) {
     maintenance,
     maintenance_options: maintenanceOptions,
     delai,
-    estimation: quote.surDevis ? null : quote.total,
+    // On enregistre toujours le montant, y compris pour un projet sur mesure :
+    // le client a vu « Sur devis », mais le panel a besoin d'un chiffre.
+    estimation: quote.total,
     estimation_mensuelle: quote.monthly,
     remise_percent: quote.discountPercent,
     remise_label: quote.discountLabel,

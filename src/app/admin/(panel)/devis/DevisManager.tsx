@@ -12,7 +12,7 @@ import {
 } from "@/lib/devis";
 import { createClient } from "@/lib/supabase/client";
 import { suggestQuote, selectionFromDevis, devisTypes, devisObjectifs } from "@/lib/quote";
-import { VisionPreview } from "@/components/devis/VisionPreview";
+import { AiVisionPanel } from "@/components/devis/AiVisionPanel";
 
 export function DevisManager({
   initial, live, onChange, catalogOverrides,
@@ -307,8 +307,13 @@ export function DevisManager({
                       </span>
                       <span className="text-right">
                         <span className="block text-2xl font-bold leading-tight text-white">
-                          {quote.surDevis ? "Sur devis" : `${quote.total.toLocaleString("fr-FR")} €`}
+                          {quote.total.toLocaleString("fr-FR")} €
                         </span>
+                        {quote.surDevis && (
+                          <span className="block text-[11px] text-amber-300">
+                            base sur mesure — le client a vu « Sur devis »
+                          </span>
+                        )}
                         {quote.monthly > 0 && (
                           <span className="block text-xs text-white/55">
                             puis {quote.monthly.toLocaleString("fr-FR")} €/mois
@@ -317,7 +322,7 @@ export function DevisManager({
                       </span>
                     </div>
 
-                    {selected.estimation != null && selected.estimation !== quote.total && (
+                    {!quote.surDevis && selected.estimation != null && selected.estimation !== quote.total && (
                       <p className="rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-xs text-sky-200">
                         Montant affiché au client lors de l&apos;envoi :{" "}
                         {selected.estimation.toLocaleString("fr-FR")} €. Le tarif ayant changé depuis, honorez
@@ -363,7 +368,12 @@ export function DevisManager({
 
                     {vision && (
                       <div className="pt-2">
-                        <VisionPreview vision={vision} />
+                        <AiVisionPanel
+                          devisId={selected.id}
+                          vision={vision}
+                          initialImage={selected.vision_image}
+                          live={live}
+                        />
                       </div>
                     )}
 

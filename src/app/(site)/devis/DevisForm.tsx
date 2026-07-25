@@ -509,13 +509,10 @@ export function DevisForm({
           </div>
         )}
 
-        <div className="mt-7 text-left">
-          <p className="mb-3 text-center text-sm text-white/55">
-            Voici l&apos;aperçu que nous avons généré à partir de vos réponses — gardez-le, il servira de base
-            à notre première maquette.
-          </p>
-          <VisionPreview vision={vision} />
-        </div>
+        <p className="mx-auto mt-6 max-w-md text-sm text-white/45">
+          Nous préparons dès maintenant une première piste visuelle à partir de vos réponses.
+          Vous la découvrirez lors de notre échange.
+        </p>
       </motion.div>
     );
   }
@@ -1095,12 +1092,6 @@ export function DevisForm({
                   placeholder="Précisez si besoin : « bleu nuit & doré », vos couleurs de marque…"
                 />
               </div>
-            </div>
-
-            {/* Aperçu généré */}
-            <div>
-              <Label>Votre site, tel qu&apos;on l&apos;imagine</Label>
-              <VisionPreview vision={vision} />
             </div>
 
             <FieldGroup label="Ambiance / émotion à transmettre">

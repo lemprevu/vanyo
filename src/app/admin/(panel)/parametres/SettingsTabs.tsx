@@ -297,6 +297,44 @@ export function SettingsTabs({ initial, live, onChange }: { initial: SiteSetting
               </p>
               <FieldGroup label="Clé API"><Input type="password" value={v.pagespeed_api_key ?? ""} onChange={field("pagespeed_api_key")} placeholder="AIza..." /></FieldGroup>
             </div>
+
+            <div className="border-t border-white/8 pt-4">
+              <p className="mb-1 text-sm font-medium text-white/70">
+                Génération d&apos;aperçus par IA <span className="text-white/40">— usage interne</span>
+              </p>
+              <p className="mb-3 text-xs text-white/40">
+                Permet de générer, depuis une demande de devis, une vraie image de ce à quoi
+                pourrait ressembler le projet du client. Ces aperçus ne sont jamais montrés au
+                client : ils vous servent à vous faire une idée avant l&apos;échange. Chaque
+                génération est facturée par le fournisseur — créez une clé sur{" "}
+                <a
+                  href="https://platform.openai.com/api-keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-vanyo-200 hover:text-white"
+                >
+                  platform.openai.com
+                </a>
+                . Sans clé, le panel affiche un simple schéma de mise en page, gratuit.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FieldGroup label="Clé d'API">
+                  <Input
+                    type="password"
+                    value={v.ai_image_key ?? ""}
+                    onChange={field("ai_image_key")}
+                    placeholder="sk-..."
+                  />
+                </FieldGroup>
+                <FieldGroup label="Modèle d'image">
+                  <Input
+                    value={v.ai_image_model ?? ""}
+                    onChange={field("ai_image_model")}
+                    placeholder="gpt-image-1"
+                  />
+                </FieldGroup>
+              </div>
+            </div>
           </div>
         )}
 

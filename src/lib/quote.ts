@@ -108,13 +108,16 @@ export function estimate(sel: QuoteSelection, catalog: Catalog = DEFAULT_CATALOG
   const monthlyLines: QuoteLine[] = [];
 
   // ── Base ────────────────────────────────────────────────────────
-  if (!surDevis) {
-    lines.push({
-      label: `Formule ${pack.name}`,
-      amount: pack.base ?? 0,
-      note: `${pack.pagesLabel} page(s), ${pack.includes.length} module(s) compris`,
-    });
-  }
+  // Toujours chiffrée, y compris pour « Sur Mesure » : le client voit
+  // « Sur devis », mais le panel doit disposer d'un montant de départ.
+  const base = pack.base ?? pack.internalBase ?? 0;
+  lines.push({
+    label: `Formule ${pack.name}`,
+    amount: base,
+    note: surDevis
+      ? "Base de départ pour un projet sur mesure (à affiner avec le client)"
+      : `${pack.pagesLabel} page(s), ${pack.includes.length} module(s) compris`,
+  });
 
   // ── Pages au-delà de ce que la formule comprend ─────────────────
   const pages = Math.max(1, sel.pages ?? pack.pagesIncluded);
@@ -164,7 +167,7 @@ export function estimate(sel: QuoteSelection, catalog: Catalog = DEFAULT_CATALOG
   // ── Totaux et remise ────────────────────────────────────────────
   const subtotal = Math.round(lines.reduce((sum, l) => sum + l.amount, 0) / 10) * 10;
   const discountPercent = Math.max(0, Math.min(90, sel.discountPercent ?? 0));
-  const total = surDevis ? 0 : applyDiscount(subtotal, discountPercent);
+  const total = applyDiscount(subtotal, discountPercent);
   const saved = subtotal - total;
   const monthly = monthlyLines.reduce((sum, l) => sum + l.amount, 0);
 
