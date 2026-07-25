@@ -116,7 +116,20 @@ export const SETTINGS_FALLBACK: SiteSettings = {
   promo_label: "Offre limitée",
   promo_percent: 10,
   promo_expires_at: null,
+  catalog: null,
 };
+
+/**
+ * Remise actuellement en vigueur sur le site (promo globale du panel admin),
+ * ou null. Sert au formulaire de devis pour afficher le prix remisé.
+ */
+export function activeDiscount(settings: SiteSettings): { percent: number; label: string } | null {
+  const running =
+    settings.promo_active &&
+    (!settings.promo_expires_at || new Date(settings.promo_expires_at) >= new Date());
+  if (!running || !settings.promo_percent) return null;
+  return { percent: settings.promo_percent, label: settings.promo_label || "Offre en cours" };
+}
 
 /**
  * Réglages publics du site (SANS secrets), lus via la vue Supabase

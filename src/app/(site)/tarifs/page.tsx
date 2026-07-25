@@ -7,9 +7,7 @@ import { FaqSection } from "@/components/sections/FaqSection";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Reveal } from "@/components/ui/Reveal";
 import { getPlans, getSiteSettings } from "@/lib/data";
-import {
-  PACKS, buildCompareRows, DEPLOIEMENTS, MAINTENANCE_PLANS, MAINTENANCE_OPTIONS,
-} from "@/lib/catalog";
+import { resolveCatalog, buildCompareRows } from "@/lib/catalog";
 
 export const metadata: Metadata = {
   title: "Tarifs",
@@ -19,12 +17,6 @@ export const metadata: Metadata = {
 };
 
 export const revalidate = 60;
-
-// Le comparatif et les cartes de formules sont générés à partir du catalogue
-// commercial : ils ne peuvent pas diverger du formulaire de devis.
-const rows = buildCompareRows();
-const cols = PACKS.map((p) => p.name);
-const highlightIndex = PACKS.findIndex((p) => p.highlight);
 
 const euro = (n: number) => n.toLocaleString("fr-FR") + " €";
 
@@ -36,6 +28,15 @@ function Cell({ v }: { v: boolean | string }) {
 
 export default async function TarifsPage() {
   const [plans, settings] = await Promise.all([getPlans(), getSiteSettings()]);
+
+  // Le comparatif, la mise en ligne et la maintenance sont générés à partir du
+  // catalogue effectif (valeurs par défaut + vos tarifs personnalisés) : ils ne
+  // peuvent donc pas diverger de ce que facture le formulaire de devis.
+  const catalog = resolveCatalog(settings.catalog);
+  const { packs, deploiements, maintenancePlans, maintenanceOptions } = catalog;
+  const rows = buildCompareRows(catalog);
+  const cols = packs.map((p) => p.name);
+  const highlightIndex = packs.findIndex((p) => p.highlight);
 
   return (
     <>
@@ -55,7 +56,7 @@ export default async function TarifsPage() {
           subtitle="La création du site et sa mise en ligne sont deux choses distinctes. Choisissez ce que vous nous confiez — le nom de domaine (votre adresse .fr ou .com) est facturé en supplément."
         />
         <Reveal direction="up" className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {DEPLOIEMENTS.map((d) => (
+          {deploiements.map((d) => (
             <div
               key={d.key}
               className="flex h-full flex-col rounded-2xl border border-white/8 bg-white/[0.02] p-5 transition-transform duration-500 hover:-translate-y-1"
@@ -89,7 +90,7 @@ export default async function TarifsPage() {
         />
 
         <Reveal direction="up" className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {MAINTENANCE_PLANS.map((p) => (
+          {maintenancePlans.map((p) => (
             <div
               key={p.key}
               className={`relative flex h-full flex-col rounded-2xl p-5 transition-transform duration-500 hover:-translate-y-1 ${
@@ -128,7 +129,7 @@ export default async function TarifsPage() {
               Cumulables avec n&apos;importe quelle formule de maintenance. Ajoutés ou retirés quand vous le souhaitez.
             </p>
             <ul className="mt-5 grid gap-2.5 sm:grid-cols-2">
-              {MAINTENANCE_OPTIONS.map((o) => (
+              {maintenanceOptions.map((o) => (
                 <li
                   key={o.key}
                   className="flex items-start justify-between gap-3 rounded-xl border border-white/8 bg-white/[0.02] p-3.5"

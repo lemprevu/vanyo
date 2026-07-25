@@ -124,7 +124,10 @@ export function SignatureBuilder({ settings }: { settings: SiteSettings }) {
 
       {/* Aperçu + instructions */}
       <div className="space-y-4">
-        <div className="gradient-border rounded-2xl bg-white p-6">
+        {/* Blanc littéral : la signature s'affichera sur le fond blanc d'un
+            client mail, l'aperçu doit donc rester blanc quel que soit le thème
+            du panel (`bg-white` suit le jeton de thème et s'inverserait). */}
+        <div className="gradient-border rounded-2xl bg-[#ffffff] p-6">
           <p className="mb-3 text-xs font-medium uppercase tracking-wide text-black/40">Aperçu</p>
           <div ref={previewRef} dangerouslySetInnerHTML={{ __html: html }} />
         </div>

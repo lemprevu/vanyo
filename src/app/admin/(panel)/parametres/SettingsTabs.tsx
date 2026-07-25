@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
-  Save, CheckCircle2, Loader2, Settings2, Palette, Search, Plug, Mail, Shield, Send, Megaphone,
+  Save, CheckCircle2, Loader2, Settings2, Palette, Search, Plug, Mail, Shield, Send, Megaphone, Euro,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { SiteSettingsFull } from "@/lib/types";
@@ -11,10 +11,12 @@ import { HOME_SECTIONS, FONT_CHOICES } from "@/lib/types";
 import { FieldGroup, Input, Textarea, Select, Label } from "@/components/ui/Field";
 import { TagInput } from "@/components/ui/TagInput";
 import { TwoFactorSetup } from "./TwoFactorSetup";
+import { PricingSettings } from "./PricingSettings";
 
 const TABS = [
   { key: "general", label: "Général", icon: Settings2 },
   { key: "apparence", label: "Apparence", icon: Palette },
+  { key: "tarifs", label: "Tarifs", icon: Euro },
   { key: "seo", label: "SEO", icon: Search },
   { key: "promo", label: "Promotions", icon: Megaphone },
   { key: "integrations", label: "Intégrations", icon: Plug },
@@ -156,6 +158,11 @@ export function SettingsTabs({ initial, live, onChange }: { initial: SiteSetting
               </div>
             )}
           </div>
+        )}
+
+        {/* TARIFS */}
+        {tab === "tarifs" && (
+          <PricingSettings value={v.catalog} onChange={(c) => set("catalog", c)} />
         )}
 
         {/* SEO */}

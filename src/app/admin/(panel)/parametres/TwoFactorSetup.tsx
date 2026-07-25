@@ -139,7 +139,10 @@ export function TwoFactorSetup({ live, demo = false }: { live: boolean; demo?: b
         <div className="flex justify-center">
           {/* Supabase renvoie un data-URI SVG */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={enrolling.qr} alt="QR code 2FA" className="rounded-lg bg-white p-2" width={180} height={180} />
+          {/* Blanc littéral : `bg-white` suit le jeton de thème du panel et
+              deviendrait sombre en thème clair — un QR code doit rester
+              lisible par l'appareil photo. */}
+          <img src={enrolling.qr} alt="QR code 2FA" className="rounded-lg bg-[#ffffff] p-2" width={180} height={180} />
         </div>
         <p className="text-center text-xs text-white/40">
           Ou saisissez la clé manuellement : <code className="text-vanyo-200">{enrolling.secret}</code>

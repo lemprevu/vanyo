@@ -290,3 +290,61 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* ------------------------------------------------------------------
+   Couleur d'accent modifiable à l'exécution
+   ------------------------------------------------------------------
+   Le panel (et le widget « Personnalisez l'affichage » du site public)
+   changent la couleur d'accent en réécrivant --color-vanyo-* pendant la
+   navigation. Les valeurs pleines suivent bien la variable, mais PAS les
+   variantes à opacité : Tailwind v4 les compile en
+   `color-mix(in oklab, var(--color-vanyo-500) 15%, transparent)`, et Chromium
+   ne réinvalide pas ces déclarations quand la variable change (une règle de
+   feuille de style garde sa valeur résolue au premier calcul).
+
+   On redéfinit donc ces variantes à partir de --accent-rgb, en rgba(…, alpha) :
+   une référence directe à une variable, elle, est correctement réinvalidée.
+   Ces règles ne sont dans aucune couche, elles l'emportent donc sur les
+   utilitaires Tailwind (@layer utilities) sans avoir besoin de !important.  */
+
+:root {
+  --accent-rgb: 109, 74, 255;   /* violet Vanyo, valeur par défaut */
+  --accent-hi-rgb: 168, 85, 247;
+  --accent-mid-rgb: 139, 92, 246;
+}
+
+.bg-vanyo-500\/10 { background-color: rgba(var(--accent-rgb), 0.10); }
+.bg-vanyo-500\/12 { background-color: rgba(var(--accent-rgb), 0.12); }
+.bg-vanyo-500\/15 { background-color: rgba(var(--accent-rgb), 0.15); }
+.bg-vanyo-500\/20 { background-color: rgba(var(--accent-rgb), 0.20); }
+.bg-vanyo-500\/25 { background-color: rgba(var(--accent-rgb), 0.25); }
+.bg-vanyo-500\/30 { background-color: rgba(var(--accent-rgb), 0.30); }
+.bg-violet-hi\/20 { background-color: rgba(var(--accent-hi-rgb), 0.20); }
+.bg-violet-mid\/15 { background-color: rgba(var(--accent-mid-rgb), 0.15); }
+
+.border-vanyo-400\/70 { border-color: rgba(var(--accent-rgb), 0.70); }
+.border-vanyo-500\/20 { border-color: rgba(var(--accent-rgb), 0.20); }
+.border-vanyo-500\/30 { border-color: rgba(var(--accent-rgb), 0.30); }
+.border-vanyo-500\/40 { border-color: rgba(var(--accent-rgb), 0.40); }
+.border-vanyo-500\/50 { border-color: rgba(var(--accent-rgb), 0.50); }
+.border-vanyo-500\/60 { border-color: rgba(var(--accent-rgb), 0.60); }
+.border-vanyo-500\/70 { border-color: rgba(var(--accent-rgb), 0.70); }
+
+.ring-vanyo-500\/25 { --tw-ring-color: rgba(var(--accent-rgb), 0.25); }
+.ring-vanyo-500\/30 { --tw-ring-color: rgba(var(--accent-rgb), 0.30); }
+.ring-vanyo-500\/50 { --tw-ring-color: rgba(var(--accent-rgb), 0.50); }
+
+.from-vanyo-500\/12 { --tw-gradient-from: rgba(var(--accent-rgb), 0.12); }
+.from-vanyo-500\/15 { --tw-gradient-from: rgba(var(--accent-rgb), 0.15); }
+.from-vanyo-500\/25 { --tw-gradient-from: rgba(var(--accent-rgb), 0.25); }
+.from-vanyo-500\/30 { --tw-gradient-from: rgba(var(--accent-rgb), 0.30); }
+.from-vanyo-500\/40 { --tw-gradient-from: rgba(var(--accent-rgb), 0.40); }
+.from-violet-hi\/30 { --tw-gradient-from: rgba(var(--accent-hi-rgb), 0.30); }
+.from-violet-hi\/40 { --tw-gradient-from: rgba(var(--accent-hi-rgb), 0.40); }
+.to-vanyo-500\/30 { --tw-gradient-to: rgba(var(--accent-rgb), 0.30); }
+.to-vanyo-500\/80 { --tw-gradient-to: rgba(var(--accent-rgb), 0.80); }
+.to-violet-hi\/8 { --tw-gradient-to: rgba(var(--accent-hi-rgb), 0.08); }
+.to-violet-hi\/10 { --tw-gradient-to: rgba(var(--accent-hi-rgb), 0.10); }
+.to-violet-hi\/15 { --tw-gradient-to: rgba(var(--accent-hi-rgb), 0.15); }
+.to-violet-hi\/30 { --tw-gradient-to: rgba(var(--accent-hi-rgb), 0.30); }
+.via-violet-mid\/25 { --tw-gradient-via: rgba(var(--accent-mid-rgb), 0.25); }

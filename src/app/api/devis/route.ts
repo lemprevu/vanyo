@@ -4,11 +4,10 @@ import { rateLimit, clientIp } from "@/lib/rateLimit";
 import { isEmail, req, str, clean, strArray } from "@/lib/validate";
 import { sendNotification, emailTemplate } from "@/lib/mailer";
 import { verifyTurnstile } from "@/lib/turnstile";
-import {
-  PACKS_BY_KEY, PACK_UNDECIDED, MODULES_BY_KEY, DEPLOIEMENTS_BY_KEY,
-  MAINTENANCE_PLANS_BY_KEY, MAINTENANCE_OPTIONS_BY_KEY, DELAIS_BY_KEY,
-} from "@/lib/catalog";
+import { PACK_UNDECIDED, resolveCatalog } from "@/lib/catalog";
 import { estimate } from "@/lib/quote";
+import { getSiteSettings, activeDiscount } from "@/lib/data";
+import { SITE_TYPES, OBJECTIFS } from "@/lib/devis";
 
 /**
  * Réception d'une demande de devis publique.
@@ -64,37 +63,53 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Vérification anti-spam échouée. Réessayez." }, { status: 400 });
   }
 
+  // ── Catalogue effectif (vos tarifs personnalisés) + remise en cours ──
+  const settings = await getSiteSettings();
+  const catalog = resolveCatalog(settings.catalog);
+  const discount = activeDiscount(settings);
+
   // ── Configuration chiffrée, filtrée sur le catalogue ──────────────
   const formuleRaw = str(body.formule, 40);
   const formule =
-    formuleRaw === PACK_UNDECIDED || (formuleRaw && formuleRaw in PACKS_BY_KEY) ? formuleRaw : null;
+    formuleRaw === PACK_UNDECIDED || (formuleRaw && formuleRaw in catalog.packsByKey) ? formuleRaw : null;
 
-  const modules = pickKeys(body.modules, MODULES_BY_KEY);
-  const deploiement = pickKey(body.deploiement, DEPLOIEMENTS_BY_KEY);
-  const maintenance = pickKey(body.maintenance, MAINTENANCE_PLANS_BY_KEY);
+  const modules = pickKeys(body.modules, catalog.modulesByKey);
+  const deploiement = pickKey(body.deploiement, catalog.deploiementsByKey);
+  const maintenance = pickKey(body.maintenance, catalog.maintenancePlansByKey);
   const maintenanceOptions =
-    maintenance && maintenance !== "aucune" ? pickKeys(body.maintenance_options, MAINTENANCE_OPTIONS_BY_KEY) : [];
-  const delai = pickKey(body.delai, DELAIS_BY_KEY) ?? "standard";
+    maintenance && maintenance !== "aucune" ? pickKeys(body.maintenance_options, catalog.maintenanceOptionsByKey) : [];
+  const delai = pickKey(body.delai, catalog.delaisByKey) ?? "standard";
 
   const pagesTotal = Number.isFinite(Number(body.pages_total))
     ? Math.max(1, Math.min(200, Math.floor(Number(body.pages_total))))
     : null;
 
   const budget = str(body.budget, 40);
-  const typeSite = str(body.type_site, 80);
 
-  // Recalcul serveur : l'estimation stockée ne dépend pas du navigateur.
-  const quote = estimate({
-    pack: formule,
-    typeSite,
-    pages: pagesTotal,
-    modules,
-    deploiement,
-    maintenance,
-    maintenanceOptions,
-    delai,
-    budget,
-  });
+  // Multi-sélection : on ne garde que des valeurs connues du catalogue.
+  const allowed = <T extends readonly string[]>(value: unknown, list: T) =>
+    strArray(value).filter((s) => (list as readonly string[]).includes(s)).slice(0, 12);
+  const typesSite = allowed(body.types_site, SITE_TYPES);
+  const objectifs = allowed(body.objectifs, OBJECTIFS);
+
+  // Recalcul serveur : l'estimation stockée ne dépend pas du navigateur,
+  // remise du moment comprise.
+  const quote = estimate(
+    {
+      pack: formule,
+      typesSite,
+      pages: pagesTotal,
+      modules,
+      deploiement,
+      maintenance,
+      maintenanceOptions,
+      delai,
+      budget,
+      discountPercent: discount?.percent ?? 0,
+      discountLabel: discount?.label ?? null,
+    },
+    catalog
+  );
 
   const record = {
     status: "Nouveau",
@@ -108,9 +123,13 @@ export async function POST(request: Request) {
     code_postal: str(body.code_postal, 20),
     pays: str(body.pays, 80),
 
-    // Projet
-    type_site: typeSite,
-    objectif: str(body.objectif, 80),
+    // Projet (multi-sélection ; les colonnes mono-valeur restent renseignées
+    // avec le premier choix pour que les anciens écrans continuent d'afficher
+    // quelque chose de sensé).
+    types_site: typesSite,
+    objectifs,
+    type_site: typesSite[0] ?? null,
+    objectif: objectifs[0] ?? null,
     site_existant: str(body.site_existant, 40),
     lien_actuel: str(body.lien_actuel, 300),
     budget,
@@ -125,6 +144,8 @@ export async function POST(request: Request) {
     delai,
     estimation: quote.surDevis ? null : quote.total,
     estimation_mensuelle: quote.monthly,
+    remise_percent: quote.discountPercent,
+    remise_label: quote.discountLabel,
 
     // Contenu
     contenu_type: str(body.contenu_type, 80),
@@ -168,10 +189,10 @@ export async function POST(request: Request) {
   }
 
   // Notification email (silencieuse si SMTP non configuré).
-  const moduleLabels = modules.map((k) => MODULES_BY_KEY[k]?.label).filter(Boolean).join(", ");
-  const maintenanceLabel = maintenance ? MAINTENANCE_PLANS_BY_KEY[maintenance]?.label : "";
+  const moduleLabels = modules.map((k) => catalog.modulesByKey[k]?.label).filter(Boolean).join(", ");
+  const maintenanceLabel = maintenance ? catalog.maintenancePlansByKey[maintenance]?.label : "";
   const maintenanceExtras = maintenanceOptions
-    .map((k) => MAINTENANCE_OPTIONS_BY_KEY[k]?.label)
+    .map((k) => catalog.maintenanceOptionsByKey[k]?.label)
     .filter(Boolean)
     .join(", ");
 
@@ -184,20 +205,21 @@ export async function POST(request: Request) {
         ["Entreprise", record.entreprise ?? ""],
         ["Email", record.email],
         ["Téléphone", record.telephone ?? ""],
-        ["Type de site", record.type_site ?? ""],
-        ["Objectif", record.objectif ?? ""],
-        ["Formule", formule ? (PACKS_BY_KEY[formule]?.name ?? "À conseiller") : ""],
+        ["Type de site", typesSite.join(", ")],
+        ["Objectif", objectifs.join(", ")],
+        ["Formule", formule ? (catalog.packsByKey[formule]?.name ?? "À conseiller") : ""],
         ["Pages", pagesTotal ? String(pagesTotal) : ""],
         ["Modules", moduleLabels],
-        ["Mise en ligne", deploiement ? (DEPLOIEMENTS_BY_KEY[deploiement]?.label ?? "") : ""],
-        ["Délai", DELAIS_BY_KEY[delai]?.label ?? ""],
+        ["Mise en ligne", deploiement ? (catalog.deploiementsByKey[deploiement]?.label ?? "") : ""],
+        ["Délai", catalog.delaisByKey[delai]?.label ?? ""],
         ["Maintenance", [maintenanceLabel, maintenanceExtras].filter(Boolean).join(" + ")],
         ["Budget annoncé", record.budget ?? ""],
         [
           "Estimation automatique",
           quote.surDevis
             ? "Sur devis"
-            : `${quote.total.toLocaleString("fr-FR")} €${quote.monthly ? ` + ${quote.monthly} €/mois` : ""}`,
+            : `${quote.total.toLocaleString("fr-FR")} €${quote.monthly ? ` + ${quote.monthly} €/mois` : ""}` +
+              (quote.discountPercent ? ` (après −${quote.discountPercent} % « ${quote.discountLabel} »)` : ""),
         ],
         ["Style visuel", record.style_visuel ?? ""],
         ["Couleurs", record.couleurs_souhaitees ?? ""],

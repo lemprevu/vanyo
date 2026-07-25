@@ -1,10 +1,8 @@
 "use client";
 
-import type { CSSProperties } from "react";
 import { LayoutDashboard } from "lucide-react";
 import { AdminShell } from "@/app/admin/(panel)/AdminShell";
 import { useBiz } from "@/lib/demo/BizProvider";
-import { shade } from "@/lib/color";
 import type { RequestsSection, Row } from "@/lib/demo/types";
 
 function formatTime(iso: string) {
@@ -67,33 +65,24 @@ export function BizShell({ children }: { children: React.ReactNode }) {
     .filter((sec) => sec.type === "messages")
     .reduce((n, sec) => n + unreadMessages(sec.id), 0);
 
-  const accent = s.brand_color;
-  const style: CSSProperties = {
-    display: "contents",
-    "--color-vanyo-300": shade(accent, 0.4),
-    "--color-vanyo-400": shade(accent, 0.2),
-    "--color-vanyo-500": accent,
-    "--color-vanyo-600": shade(accent, -0.15),
-    "--color-vanyo-700": shade(accent, -0.3),
-    "--color-violet-mid": shade(accent, 0.12),
-    "--color-violet-hi": shade(accent, 0.28),
-  } as CSSProperties;
-
+  // La couleur de marque du métier sert d'apparence d'origine du panel ;
+  // le visiteur peut ensuite la remplacer via le sélecteur d'apparence
+  // (PanelThemeProvider, dans AdminShell), qui mémorise son choix par démo.
   return (
-    <div style={style}>
-      <AdminShell
-        email={s.email}
-        live={false}
-        counts={{ devis: pendingTotal, messages: messagesTotal }}
-        notifications={notifications}
-        demoMode
-        onReset={reset}
-        basePath={`/demo/${config.id}`}
-        brandName={s.site_name}
-        navItems={navItems}
-      >
-        {children}
-      </AdminShell>
-    </div>
+    <AdminShell
+      email={s.email}
+      live={false}
+      counts={{ devis: pendingTotal, messages: messagesTotal }}
+      notifications={notifications}
+      demoMode
+      onReset={reset}
+      basePath={`/demo/${config.id}`}
+      brandName={s.site_name}
+      navItems={navItems}
+      accent={s.brand_color}
+      themeScope={`demo-${config.id}`}
+    >
+      {children}
+    </AdminShell>
   );
 }

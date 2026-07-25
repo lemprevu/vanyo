@@ -3,15 +3,16 @@
  *
  * Règles déterministes (pas d'IA) lisant le catalogue commercial : formule de
  * base + pages supplémentaires + modules non compris + mise en ligne + délai,
- * puis la maintenance mensuelle à part.
+ * puis la maintenance mensuelle à part, et enfin la remise en cours.
  *
  * La même fonction alimente le compteur en direct du formulaire public et le
  * prix suggéré du panel admin : le client et vous voyez donc exactement le
- * même chiffre.
+ * même chiffre. Le catalogue est passé en paramètre pour que les tarifs
+ * personnalisés depuis Paramètres → Tarifs soient pris en compte partout.
  */
 import {
-  PACKS_BY_KEY, PACK_UNDECIDED, MODULES_BY_KEY, EXTRA_PAGE_PRICE, PAGES_UNLIMITED,
-  DEPLOIEMENTS_BY_KEY, MAINTENANCE_PLANS_BY_KEY, MAINTENANCE_OPTIONS_BY_KEY, DELAIS_BY_KEY,
+  DEFAULT_CATALOG, PACK_UNDECIDED, PAGES_UNLIMITED, applyDiscount,
+  type Catalog,
 } from "@/lib/catalog";
 import type { Devis } from "@/lib/devis";
 
@@ -20,12 +21,22 @@ export type QuoteLine = { label: string; amount: number; note?: string };
 export type QuoteEstimate = {
   /** Lignes du montant ponctuel (création du site). */
   lines: QuoteLine[];
-  /** Total ponctuel, arrondi à la dizaine. */
+  /** Total ponctuel avant remise, arrondi à la dizaine. */
+  subtotal: number;
+  /** Total ponctuel après remise. */
   total: number;
+  /** Remise appliquée, en pourcentage (0 si aucune). */
+  discountPercent: number;
+  /** Libellé de la remise (« Offre de lancement »…). */
+  discountLabel: string | null;
+  /** Montant économisé grâce à la remise. */
+  saved: number;
   /** Lignes de l'abonnement mensuel. */
   monthlyLines: QuoteLine[];
   /** Total mensuel (maintenance). */
   monthly: number;
+  /** Nombre de mois de maintenance offerts par la formule. */
+  monthsFree: number;
   /** Vrai si la formule choisie est « Sur Mesure » : pas de prix ferme. */
   surDevis: boolean;
   /** Formule retenue pour le calcul (celle choisie, ou celle conseillée). */
@@ -38,7 +49,8 @@ export type QuoteEstimate = {
 
 export type QuoteSelection = {
   pack?: string | null;
-  typeSite?: string | null;
+  /** Types de site retenus (multi-sélection). */
+  typesSite?: string[] | null;
   pages?: number | null;
   modules?: string[] | null;
   deploiement?: string | null;
@@ -46,6 +58,9 @@ export type QuoteSelection = {
   maintenanceOptions?: string[] | null;
   delai?: string | null;
   budget?: string | null;
+  /** Remise en cours (promo globale ou code), en pourcentage. */
+  discountPercent?: number | null;
+  discountLabel?: string | null;
 };
 
 /* ------------------------------------------------------------------ */
@@ -58,11 +73,14 @@ const MID_MODULES = ["admin", "blog", "rdv", "reservation", "planning", "seo_ava
 /** Déduit la formule la plus adaptée quand le client n'en a pas choisi. */
 export function recommendPack(sel: QuoteSelection): string {
   const modules = sel.modules ?? [];
+  const types = sel.typesSite ?? [];
   const pages = sel.pages ?? 3;
 
-  if (sel.typeSite === "Application Web") return "surmesure";
+  if (types.includes("Application Web")) return "surmesure";
+  // Plusieurs métiers très différents dans un même site : c'est du sur-mesure.
+  if (types.length >= 3) return "premium";
   if (modules.filter((m) => HEAVY_MODULES.includes(m)).length >= 2) return "premium";
-  if (modules.some((m) => m === "boutique") || sel.typeSite === "E-commerce") return "premium";
+  if (modules.includes("boutique") || types.includes("E-commerce")) return "premium";
   if (pages > 8 || modules.some((m) => HEAVY_MODULES.includes(m))) return "premium";
   if (pages > 3 || modules.some((m) => MID_MODULES.includes(m))) return "business";
   return "starter";
@@ -80,10 +98,10 @@ function clientBudgetFloor(budget?: string | null): number | null {
   return Number(digits[0]);
 }
 
-export function estimate(sel: QuoteSelection): QuoteEstimate {
+export function estimate(sel: QuoteSelection, catalog: Catalog = DEFAULT_CATALOG): QuoteEstimate {
   const chosen = sel.pack && sel.pack !== PACK_UNDECIDED ? sel.pack : null;
   const packKey = chosen ?? recommendPack(sel);
-  const pack = PACKS_BY_KEY[packKey] ?? PACKS_BY_KEY.business;
+  const pack = catalog.packsByKey[packKey] ?? catalog.packsByKey.business ?? catalog.packs[0];
   const surDevis = pack.base === null;
 
   const lines: QuoteLine[] = [];
@@ -104,33 +122,33 @@ export function estimate(sel: QuoteSelection): QuoteEstimate {
   if (extraPages > 0) {
     lines.push({
       label: `${extraPages} page${extraPages > 1 ? "s" : ""} au-delà de la formule`,
-      amount: extraPages * EXTRA_PAGE_PRICE,
-      note: `${EXTRA_PAGE_PRICE} € par page`,
+      amount: extraPages * catalog.extraPagePrice,
+      note: `${catalog.extraPagePrice} € par page`,
     });
   }
 
   // ── Modules non compris dans la formule ─────────────────────────
   for (const key of sel.modules ?? []) {
-    const mod = MODULES_BY_KEY[key];
+    const mod = catalog.modulesByKey[key];
     if (!mod || mod.price === 0) continue;
     if (pack.includes.includes(key)) continue; // déjà compris : facturé 0
     lines.push({ label: mod.label, amount: mod.price });
   }
 
   // ── Mise en ligne ───────────────────────────────────────────────
-  const deploiement = sel.deploiement ? DEPLOIEMENTS_BY_KEY[sel.deploiement] : undefined;
+  const deploiement = sel.deploiement ? catalog.deploiementsByKey[sel.deploiement] : undefined;
   if (deploiement && deploiement.price > 0) {
     lines.push({ label: deploiement.label, amount: deploiement.price });
   }
 
   // ── Délai ───────────────────────────────────────────────────────
-  const delai = sel.delai ? DELAIS_BY_KEY[sel.delai] : undefined;
+  const delai = sel.delai ? catalog.delaisByKey[sel.delai] : undefined;
   if (delai && delai.price > 0) {
     lines.push({ label: delai.label, amount: delai.price });
   }
 
   // ── Maintenance mensuelle ───────────────────────────────────────
-  const plan = sel.maintenance ? MAINTENANCE_PLANS_BY_KEY[sel.maintenance] : undefined;
+  const plan = sel.maintenance ? catalog.maintenancePlansByKey[sel.maintenance] : undefined;
   if (plan && plan.price > 0) {
     monthlyLines.push({
       label: `Maintenance ${plan.label}`,
@@ -138,21 +156,26 @@ export function estimate(sel: QuoteSelection): QuoteEstimate {
       note: pack.maintenanceOfferte > 0 ? `${pack.maintenanceOfferte} mois offerts` : undefined,
     });
     for (const key of sel.maintenanceOptions ?? []) {
-      const opt = MAINTENANCE_OPTIONS_BY_KEY[key];
+      const opt = catalog.maintenanceOptionsByKey[key];
       if (opt) monthlyLines.push({ label: opt.label, amount: opt.price });
     }
   }
 
-  const rawTotal = lines.reduce((sum, l) => sum + l.amount, 0);
-  const total = Math.round(rawTotal / 10) * 10;
+  // ── Totaux et remise ────────────────────────────────────────────
+  const subtotal = Math.round(lines.reduce((sum, l) => sum + l.amount, 0) / 10) * 10;
+  const discountPercent = Math.max(0, Math.min(90, sel.discountPercent ?? 0));
+  const total = surDevis ? 0 : applyDiscount(subtotal, discountPercent);
+  const saved = subtotal - total;
   const monthly = monthlyLines.reduce((sum, l) => sum + l.amount, 0);
 
   const floor = clientBudgetFloor(sel.budget);
   const belowClientBudget = !surDevis && floor !== null && total > floor * 1.5;
 
   return {
-    lines, total, monthlyLines, monthly, surDevis,
-    packKey, packSuggested: !chosen, belowClientBudget,
+    lines, subtotal, total,
+    discountPercent, discountLabel: discountPercent > 0 ? (sel.discountLabel ?? "Remise en cours") : null, saved,
+    monthlyLines, monthly, monthsFree: pack.maintenanceOfferte,
+    surDevis, packKey, packSuggested: !chosen, belowClientBudget,
   };
 }
 
@@ -186,6 +209,18 @@ function legacyPages(nombrePages?: string | null): number | null {
   return Math.max(...digits.map(Number));
 }
 
+/** Types de site d'une demande, qu'elle vienne de la v1 (texte) ou de la v2 (liste). */
+export function devisTypes(d: Devis): string[] {
+  if (d.types_site && d.types_site.length > 0) return d.types_site;
+  return d.type_site ? [d.type_site] : [];
+}
+
+/** Objectifs d'une demande, v1 (texte) ou v2 (liste). */
+export function devisObjectifs(d: Devis): string[] {
+  if (d.objectifs && d.objectifs.length > 0) return d.objectifs;
+  return d.objectif ? [d.objectif] : [];
+}
+
 /** Convertit une demande enregistrée en sélection chiffrable. */
 export function selectionFromDevis(d: Devis): QuoteSelection {
   const modules =
@@ -197,7 +232,7 @@ export function selectionFromDevis(d: Devis): QuoteSelection {
 
   return {
     pack: d.formule ?? null,
-    typeSite: d.type_site,
+    typesSite: devisTypes(d),
     pages: d.pages_total ?? legacyPages(d.nombre_pages),
     modules,
     deploiement: d.deploiement ?? null,
@@ -205,9 +240,11 @@ export function selectionFromDevis(d: Devis): QuoteSelection {
     maintenanceOptions: d.maintenance_options ?? null,
     delai: d.delai ?? null,
     budget: d.budget,
+    discountPercent: d.remise_percent ?? 0,
+    discountLabel: d.remise_label ?? null,
   };
 }
 
-export function suggestQuote(d: Devis): QuoteEstimate {
-  return estimate(selectionFromDevis(d));
+export function suggestQuote(d: Devis, catalog: Catalog = DEFAULT_CATALOG): QuoteEstimate {
+  return estimate(selectionFromDevis(d), catalog);
 }

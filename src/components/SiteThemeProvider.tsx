@@ -3,7 +3,7 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { PersonalizeWidget } from "@/components/PersonalizeWidget";
 import { SiteThemeContext, type Theme } from "@/lib/theme-context";
-import { shade } from "@/lib/color";
+import { shade, rgbChannels } from "@/lib/color";
 
 const THEME_KEY = "vanyo-theme";
 const ACCENT_KEY = "vanyo-accent";
@@ -57,6 +57,10 @@ export function SiteThemeProvider({
         "--color-vanyo-700": shade(accent, -0.3),
         "--color-violet-mid": shade(accent, 0.12),
         "--color-violet-hi": shade(accent, 0.28),
+        // Canaux r,g,b des variantes à opacité (voir la note dans globals.css).
+        "--accent-rgb": rgbChannels(accent),
+        "--accent-hi-rgb": rgbChannels(shade(accent, 0.28)),
+        "--accent-mid-rgb": rgbChannels(shade(accent, 0.12)),
       } as CSSProperties)
     : {};
 

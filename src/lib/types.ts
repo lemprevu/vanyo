@@ -1,5 +1,7 @@
 /** Types des contenus éditables depuis le panel admin (tables Supabase). */
 
+import type { CatalogOverrides } from "@/lib/catalog";
+
 export type Realisation = {
   id: string;
   created_at: string;
@@ -127,6 +129,12 @@ export type SiteSettings = {
   promo_label: string | null;
   promo_percent: number;
   promo_expires_at: string | null;
+  /**
+   * Personnalisations tarifaires saisies dans Paramètres → Tarifs.
+   * Ne contient que les écarts au catalogue par défaut (voir
+   * `CatalogOverrides` dans lib/catalog.ts).
+   */
+  catalog: CatalogOverrides | null;
 };
 
 export type PromoCode = {

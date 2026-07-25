@@ -8,14 +8,22 @@ import {
 } from "lucide-react";
 import {
   DEVIS_STATUSES, STATUS_STYLES, type Devis, type DevisStatus,
-  PACKS_BY_KEY, MODULES_BY_KEY, DEPLOIEMENTS_BY_KEY,
-  MAINTENANCE_PLANS_BY_KEY, MAINTENANCE_OPTIONS_BY_KEY, DELAIS_BY_KEY,
+  resolveCatalog, type CatalogOverrides,
 } from "@/lib/devis";
 import { createClient } from "@/lib/supabase/client";
-import { suggestQuote, selectionFromDevis } from "@/lib/quote";
+import { suggestQuote, selectionFromDevis, devisTypes, devisObjectifs } from "@/lib/quote";
 import { VisionPreview } from "@/components/devis/VisionPreview";
 
-export function DevisManager({ initial, live, onChange }: { initial: Devis[]; live: boolean; onChange?: (rows: Devis[]) => void }) {
+export function DevisManager({
+  initial, live, onChange, catalogOverrides,
+}: {
+  initial: Devis[];
+  live: boolean;
+  onChange?: (rows: Devis[]) => void;
+  /** Tarifs personnalisés (Paramètres → Tarifs), pour chiffrer comme le site. */
+  catalogOverrides?: CatalogOverrides | null;
+}) {
+  const catalog = useMemo(() => resolveCatalog(catalogOverrides), [catalogOverrides]);
   const [rows, setRows] = useState<Devis[]>(initial);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"Tous" | DevisStatus>("Tous");
@@ -41,23 +49,23 @@ export function DevisManager({ initial, live, onChange }: { initial: Devis[]; li
     });
   }, [rows, query, filter]);
 
-  const quote = useMemo(() => (selected ? suggestQuote(selected) : null), [selected]);
+  const quote = useMemo(() => (selected ? suggestQuote(selected, catalog) : null), [selected, catalog]);
 
   // Aperçu « vision du client », régénéré à partir des réponses enregistrées.
   const vision = useMemo(() => {
     if (!selected) return null;
     const sel = selectionFromDevis(selected);
-    const pack = sel.pack ? PACKS_BY_KEY[sel.pack] : undefined;
+    const pack = sel.pack ? catalog.packsByKey[sel.pack] : undefined;
     return {
       siteName: selected.entreprise || `${selected.prenom} ${selected.nom}`.trim(),
-      typeSite: selected.type_site,
-      objectif: selected.objectif,
+      typesSite: devisTypes(selected),
+      objectifs: devisObjectifs(selected),
       styleVisuel: selected.style_visuel,
       couleurs: selected.couleurs_souhaitees,
       pages: sel.pages,
       modules: [...(sel.modules ?? []), ...(pack?.includes ?? [])],
     };
-  }, [selected]);
+  }, [selected, catalog]);
 
   const counts = useMemo(() => {
     const map: Record<string, number> = { Tous: rows.length };
@@ -156,7 +164,7 @@ export function DevisManager({ initial, live, onChange }: { initial: Devis[]; li
             <dl className="mt-3 space-y-1 text-sm">
               <div className="flex justify-between gap-3">
                 <dt className="shrink-0 text-white/45">Type</dt>
-                <dd className="min-w-0 truncate text-right text-white/75">{d.type_site || "—"}</dd>
+                <dd className="min-w-0 truncate text-right text-white/75">{devisTypes(d).join(", ") || "—"}</dd>
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="shrink-0 text-white/45">Estimation</dt>
@@ -227,7 +235,7 @@ export function DevisManager({ initial, live, onChange }: { initial: Devis[]; li
                       <div className="text-xs text-white/40">{d.email}</div>
                     </button>
                   </td>
-                  <td className="px-5 py-3 text-white/70">{d.type_site || "—"}</td>
+                  <td className="px-5 py-3 text-white/70">{devisTypes(d).join(", ") || "—"}</td>
                   <td className="px-5 py-3 text-white/70">{d.budget || "—"}</td>
                   <td className="px-5 py-3">
                     <select
@@ -342,7 +350,7 @@ export function DevisManager({ initial, live, onChange }: { initial: Devis[]; li
                     {quote.packSuggested && (
                       <p className="rounded-lg border border-vanyo-500/30 bg-vanyo-500/10 px-3 py-2 text-xs text-vanyo-200">
                         Le client n&apos;a pas choisi de formule — calcul basé sur la formule{" "}
-                        {PACKS_BY_KEY[quote.packKey]?.name}, la plus adaptée à ses réponses.
+                        {catalog.packsByKey[quote.packKey]?.name}, la plus adaptée à ses réponses.
                       </p>
                     )}
 
@@ -370,17 +378,17 @@ export function DevisManager({ initial, live, onChange }: { initial: Devis[]; li
                   <Section title="Configuration choisie">
                     <Field
                       label="Formule"
-                      value={selected.formule ? (PACKS_BY_KEY[selected.formule]?.name ?? "À conseiller") : null}
+                      value={selected.formule ? (catalog.packsByKey[selected.formule]?.name ?? "À conseiller") : null}
                     />
                     <Field label="Pages" value={selected.pages_total ? String(selected.pages_total) : null} />
                     <Field
                       label="Mise en ligne"
-                      value={selected.deploiement ? (DEPLOIEMENTS_BY_KEY[selected.deploiement]?.label ?? null) : null}
+                      value={selected.deploiement ? (catalog.deploiementsByKey[selected.deploiement]?.label ?? null) : null}
                     />
-                    <Field label="Délai" value={selected.delai ? (DELAIS_BY_KEY[selected.delai]?.label ?? null) : null} />
+                    <Field label="Délai" value={selected.delai ? (catalog.delaisByKey[selected.delai]?.label ?? null) : null} />
                     <Field
                       label="Maintenance"
-                      value={selected.maintenance ? (MAINTENANCE_PLANS_BY_KEY[selected.maintenance]?.label ?? null) : null}
+                      value={selected.maintenance ? (catalog.maintenancePlansByKey[selected.maintenance]?.label ?? null) : null}
                     />
 
                     {selected.modules && selected.modules.length > 0 && (
@@ -389,7 +397,7 @@ export function DevisManager({ initial, live, onChange }: { initial: Devis[]; li
                         <div className="mt-1.5 flex flex-wrap gap-1.5">
                           {selected.modules.map((m) => (
                             <span key={m} className="rounded-md bg-vanyo-500/12 px-2 py-1 text-xs text-vanyo-200">
-                              {MODULES_BY_KEY[m]?.label ?? m}
+                              {catalog.modulesByKey[m]?.label ?? m}
                             </span>
                           ))}
                         </div>
@@ -402,7 +410,7 @@ export function DevisManager({ initial, live, onChange }: { initial: Devis[]; li
                         <div className="mt-1.5 flex flex-wrap gap-1.5">
                           {selected.maintenance_options.map((o) => (
                             <span key={o} className="rounded-md bg-emerald-500/15 px-2 py-1 text-xs text-emerald-300">
-                              {MAINTENANCE_OPTIONS_BY_KEY[o]?.label ?? o}
+                              {catalog.maintenanceOptionsByKey[o]?.label ?? o}
                             </span>
                           ))}
                         </div>
@@ -421,7 +429,7 @@ export function DevisManager({ initial, live, onChange }: { initial: Devis[]; li
                 </Section>
 
                 <Section title="Projet">
-                  <Field label="Type de site" value={selected.type_site} />
+                  <Field label="Type de site" value={devisTypes(selected).join(", ")} />
                   <Field label="Nombre de pages" value={selected.nombre_pages} />
                   <Info icon={Euro} value={selected.budget || "—"} />
                   {selected.date_souhaitee && <Info icon={Calendar} value={selected.date_souhaitee} />}
@@ -452,7 +460,7 @@ export function DevisManager({ initial, live, onChange }: { initial: Devis[]; li
                   selected.ambiance || selected.inspirations || selected.concurrents ||
                   selected.public_cible || selected.contenu_type || selected.langues || selected.a_des_photos) && (
                   <Section title="Style & contenu">
-                    <Field label="Objectif" value={selected.objectif} />
+                    <Field label="Objectifs" value={devisObjectifs(selected).join(", ")} />
                     <Field label="Style visuel" value={selected.style_visuel} />
                     <Field label="Couleurs" value={selected.couleurs_souhaitees} />
                     <Field label="Ambiance" value={selected.ambiance} />

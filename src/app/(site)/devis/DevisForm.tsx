@@ -18,9 +18,8 @@ import { estimate } from "@/lib/quote";
 import {
   SITE_TYPES, BUDGETS, OBJECTIFS, STYLES_VISUELS, CONTENU_TYPES, PHOTOS_STATES,
   LOGO_STATE, COULEURS_PRESETS,
-  PACKS, PACK_UNDECIDED, PAGES_UNLIMITED, EXTRA_PAGE_PRICE,
-  MODULES, MODULE_GROUPS, MODULES_BY_KEY,
-  DEPLOIEMENTS, DELAIS, MAINTENANCE_PLANS, MAINTENANCE_OPTIONS,
+  PACK_UNDECIDED, PAGES_UNLIMITED, MODULE_GROUPS,
+  resolveCatalog, type CatalogOverrides,
 } from "@/lib/devis";
 
 const STEPS = [
@@ -66,6 +65,37 @@ function Choice({
       } ${className}`}
     >
       {value}
+    </button>
+  );
+}
+
+/**
+ * Puce de sélection multiple. Un même projet peut relever de plusieurs types
+ * (un restaurant qui vend aussi en ligne) ou viser plusieurs objectifs.
+ */
+function MultiChoice({
+  value, selected, onToggle,
+}: { value: string; selected: string[]; onToggle: (v: string) => void }) {
+  const active = selected.includes(value);
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={() => onToggle(value)}
+      className={`flex items-start gap-2.5 rounded-xl border px-3.5 py-2.5 text-left text-sm font-medium transition-all duration-300 ${
+        active
+          ? "border-vanyo-500/70 bg-vanyo-500/15 text-white"
+          : "border-white/10 bg-white/[0.02] text-white/60 hover:border-white/25"
+      }`}
+    >
+      <span
+        className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
+          active ? "border-vanyo-400 bg-vanyo-500" : "border-white/25"
+        }`}
+      >
+        {active && <Check className="h-3 w-3 text-white" />}
+      </span>
+      <span className="min-w-0">{value}</span>
     </button>
   );
 }
@@ -183,7 +213,16 @@ function ToggleRow({
 /*  Formulaire                                                         */
 /* ------------------------------------------------------------------ */
 
-export function DevisForm({ turnstileKey }: { turnstileKey?: string | null }) {
+export function DevisForm({
+  turnstileKey, catalogOverrides, discount,
+}: {
+  turnstileKey?: string | null;
+  /** Tarifs personnalisés depuis Paramètres → Tarifs. */
+  catalogOverrides?: CatalogOverrides | null;
+  /** Remise en cours sur le site (promo globale), appliquée à l'estimation. */
+  discount?: { percent: number; label: string } | null;
+}) {
+  const catalog = useMemo(() => resolveCatalog(catalogOverrides), [catalogOverrides]);
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [status, setStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
@@ -196,9 +235,9 @@ export function DevisForm({ turnstileKey }: { turnstileKey?: string | null }) {
 
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Étape 1 — Projet
-  const [typeSite, setTypeSite] = useState("");
-  const [objectif, setObjectif] = useState("");
+  // Étape 1 — Projet (types et objectifs sont multi-sélection)
+  const [typesSite, setTypesSite] = useState<string[]>([]);
+  const [objectifs, setObjectifs] = useState<string[]>([]);
   const [siteExistant, setSiteExistant] = useState("");
   const [budget, setBudget] = useState("");
 
@@ -237,21 +276,26 @@ export function DevisForm({ turnstileKey }: { turnstileKey?: string | null }) {
 
   const quote = useMemo(
     () =>
-      estimate({
-        pack: pack || null,
-        typeSite,
-        pages,
-        modules,
-        deploiement,
-        maintenance,
-        maintenanceOptions,
-        delai,
-        budget,
-      }),
-    [pack, typeSite, pages, modules, deploiement, maintenance, maintenanceOptions, delai, budget]
+      estimate(
+        {
+          pack: pack || null,
+          typesSite,
+          pages,
+          modules,
+          deploiement,
+          maintenance,
+          maintenanceOptions,
+          delai,
+          budget,
+          discountPercent: discount?.percent ?? 0,
+          discountLabel: discount?.label ?? null,
+        },
+        catalog
+      ),
+    [pack, typesSite, pages, modules, deploiement, maintenance, maintenanceOptions, delai, budget, discount, catalog]
   );
 
-  const activePack = PACKS.find((p) => p.key === quote.packKey);
+  const activePack = catalog.packsByKey[quote.packKey];
   const includedInPack = useCallback(
     (key: string) => !!activePack?.includes.includes(key),
     [activePack]
@@ -265,14 +309,14 @@ export function DevisForm({ turnstileKey }: { turnstileKey?: string | null }) {
   const vision = useMemo(
     () => ({
       siteName: entreprise,
-      typeSite,
-      objectif,
+      typesSite,
+      objectifs,
       styleVisuel,
       couleurs: couleurLibre.trim() ? `${couleurLibre} ${couleur}` : couleur,
       pages,
       modules: [...modules, ...(activePack?.includes ?? [])],
     }),
-    [entreprise, typeSite, objectif, styleVisuel, couleur, couleurLibre, pages, modules, activePack]
+    [entreprise, typesSite, objectifs, styleVisuel, couleur, couleurLibre, pages, modules, activePack]
   );
 
   /* ---------------------------------------------------------------- */
@@ -331,14 +375,14 @@ export function DevisForm({ turnstileKey }: { turnstileKey?: string | null }) {
 
   // Blocages doux : on n'avance pas sans les réponses structurantes.
   const blocked =
-    (step === 0 && !typeSite) ||
+    (step === 0 && typesSite.length === 0) ||
     (step === 1 && !pack) ||
     (step === 4 && !deploiement) ||
     (step === 5 && !maintenance);
 
   const blockedMessage =
     step === 0
-      ? "Choisissez le type de site pour continuer."
+      ? "Choisissez au moins un type de site pour continuer."
       : step === 1
         ? "Choisissez une formule (ou « Conseillez-moi »)."
         : step === 4
@@ -378,8 +422,8 @@ export function DevisForm({ turnstileKey }: { turnstileKey?: string | null }) {
       code_postal: fd.get("code_postal"),
       pays: fd.get("pays"),
       // Projet
-      type_site: typeSite,
-      objectif,
+      types_site: typesSite,
+      objectifs,
       site_existant: siteExistant,
       lien_actuel: fd.get("lien_actuel"),
       budget,
@@ -556,10 +600,18 @@ export function DevisForm({ turnstileKey }: { turnstileKey?: string | null }) {
               </span>
               <span className="block truncate text-lg font-bold leading-tight text-white">
                 {quote.surDevis ? "Sur devis" : euro(quote.total)}
+                {!quote.surDevis && quote.discountPercent > 0 && (
+                  <span className="ml-2 text-sm font-medium text-white/40 line-through">{euro(quote.subtotal)}</span>
+                )}
                 {quote.monthly > 0 && (
                   <span className="text-sm font-medium text-white/60"> + {euro(quote.monthly)}/mois</span>
                 )}
               </span>
+              {!quote.surDevis && quote.discountPercent > 0 && (
+                <span className="mt-0.5 block truncate text-xs font-medium text-emerald-300">
+                  {quote.discountLabel} · −{quote.discountPercent} %, soit {euro(quote.saved)} économisés
+                </span>
+              )}
             </span>
             <ChevronDown
               className={`h-4 w-4 shrink-0 text-white/50 transition-transform duration-300 ${showDetail ? "rotate-180" : ""}`}
@@ -581,6 +633,16 @@ export function DevisForm({ turnstileKey }: { turnstileKey?: string | null }) {
                       <span className="shrink-0 text-white/80">{euro(l.amount)}</span>
                     </li>
                   ))}
+                  <li className="flex justify-between gap-4 border-t border-white/10 pt-2 text-white/70">
+                    <span>Sous-total</span>
+                    <span>{euro(quote.subtotal)}</span>
+                  </li>
+                  {quote.discountPercent > 0 && (
+                    <li className="flex justify-between gap-4 text-emerald-300">
+                      <span>{quote.discountLabel} (−{quote.discountPercent} %)</span>
+                      <span>−{euro(quote.saved)}</span>
+                    </li>
+                  )}
                   <li className="flex justify-between gap-4 border-t border-white/10 pt-2 font-semibold text-white">
                     <span>Total création</span>
                     <span>{euro(quote.total)}</span>
@@ -633,18 +695,32 @@ export function DevisForm({ turnstileKey }: { turnstileKey?: string | null }) {
           <div className="space-y-6">
             <div>
               <Label required>Quel type de site souhaitez-vous ?</Label>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              <p className="-mt-0.5 mb-2 text-xs text-white/45">
+                Plusieurs réponses possibles — un restaurant qui vend aussi en ligne, par exemple.
+              </p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {SITE_TYPES.map((t) => (
-                  <Choice key={t} value={t} current={typeSite} onChange={setTypeSite} />
+                  <MultiChoice
+                    key={t}
+                    value={t}
+                    selected={typesSite}
+                    onToggle={(v) => toggle(typesSite, setTypesSite, v)}
+                  />
                 ))}
               </div>
             </div>
 
             <div>
-              <Label>Quel est votre objectif principal ?</Label>
+              <Label>Quels sont vos objectifs ?</Label>
+              <p className="-mt-0.5 mb-2 text-xs text-white/45">Plusieurs réponses possibles.</p>
               <div className="grid gap-2 sm:grid-cols-2">
                 {OBJECTIFS.map((o) => (
-                  <Choice key={o} value={o} current={objectif} onChange={setObjectif} />
+                  <MultiChoice
+                    key={o}
+                    value={o}
+                    selected={objectifs}
+                    onToggle={(v) => toggle(objectifs, setObjectifs, v)}
+                  />
                 ))}
               </div>
             </div>
@@ -683,7 +759,7 @@ export function DevisForm({ turnstileKey }: { turnstileKey?: string | null }) {
             </p>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              {PACKS.map((p) => (
+              {catalog.packs.map((p) => (
                 <OptionCard
                   key={p.key}
                   active={pack === p.key}
@@ -773,7 +849,7 @@ export function DevisForm({ turnstileKey }: { turnstileKey?: string | null }) {
                   <span className="text-vanyo-200">
                     {activePack?.pagesIncluded} comprises dans la formule {activePack?.name} ·{" "}
                     <strong className="text-white">
-                      {extraPages} en supplément (+{euro(extraPages * EXTRA_PAGE_PRICE)})
+                      {extraPages} en supplément (+{euro(extraPages * catalog.extraPagePrice)})
                     </strong>
                   </span>
                 ) : (
@@ -836,7 +912,7 @@ export function DevisForm({ turnstileKey }: { turnstileKey?: string | null }) {
             </p>
 
             {MODULE_GROUPS.map((group) => {
-              const items = MODULES.filter((m) => m.group === group);
+              const items = catalog.modules.filter((m) => m.group === group);
               if (items.length === 0) return null;
               return (
                 <div key={group}>
@@ -874,7 +950,7 @@ export function DevisForm({ turnstileKey }: { turnstileKey?: string | null }) {
                 Le nom de domaine (votre adresse .fr ou .com) est facturé en supplément.
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
-                {DEPLOIEMENTS.map((d) => (
+                {catalog.deploiements.map((d) => (
                   <OptionCard
                     key={d.key}
                     active={deploiement === d.key}
@@ -891,7 +967,7 @@ export function DevisForm({ turnstileKey }: { turnstileKey?: string | null }) {
             <div>
               <Label>Quel délai vous convient ?</Label>
               <div className="grid gap-3 sm:grid-cols-2">
-                {DELAIS.map((d) => (
+                {catalog.delais.map((d) => (
                   <OptionCard
                     key={d.key}
                     active={delai === d.key}
@@ -922,7 +998,7 @@ export function DevisForm({ turnstileKey }: { turnstileKey?: string | null }) {
                 )}
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
-                {MAINTENANCE_PLANS.map((p) => (
+                {catalog.maintenancePlans.map((p) => (
                   <OptionCard
                     key={p.key}
                     active={maintenance === p.key}
@@ -948,7 +1024,7 @@ export function DevisForm({ turnstileKey }: { turnstileKey?: string | null }) {
                   mensualité et se retire quand vous voulez.
                 </p>
                 <div className="grid gap-2 lg:grid-cols-2">
-                  {MAINTENANCE_OPTIONS.map((o) => (
+                  {catalog.maintenanceOptions.map((o) => (
                     <ToggleRow
                       key={o.key}
                       active={maintenanceOptions.includes(o.key)}
@@ -1086,18 +1162,19 @@ export function DevisForm({ turnstileKey }: { turnstileKey?: string | null }) {
                 Récapitulatif de votre demande
               </h4>
               <dl className="space-y-1.5 text-sm">
-                <Recap label="Type de site" value={typeSite} />
+                <Recap label="Type de site" value={typesSite.join(", ")} />
+                <Recap label="Objectifs" value={objectifs.join(", ")} />
                 <Recap label="Formule" value={activePack?.name} />
                 <Recap label="Pages" value={`${pages}`} />
                 <Recap
                   label="Modules ajoutés"
                   value={
-                    modules.filter((m) => !includedInPack(m)).map((m) => MODULES_BY_KEY[m]?.label).filter(Boolean).join(", ") ||
+                    modules.filter((m) => !includedInPack(m)).map((m) => catalog.modulesByKey[m]?.label).filter(Boolean).join(", ") ||
                     "Aucun (tout est compris)"
                   }
                 />
-                <Recap label="Mise en ligne" value={DEPLOIEMENTS.find((d) => d.key === deploiement)?.label} />
-                <Recap label="Maintenance" value={MAINTENANCE_PLANS.find((p) => p.key === maintenance)?.label} />
+                <Recap label="Mise en ligne" value={catalog.deploiements.find((d) => d.key === deploiement)?.label} />
+                <Recap label="Maintenance" value={catalog.maintenancePlans.find((p) => p.key === maintenance)?.label} />
                 <Recap label="Style" value={styleVisuel} />
               </dl>
               <div className="mt-3 flex items-baseline justify-between border-t border-white/10 pt-3">

@@ -12,6 +12,8 @@ import { RotateCcw } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { LogoMark } from "@/components/Logo";
 import { createClient } from "@/lib/supabase/client";
+import { PanelThemeProvider } from "@/lib/panel-theme";
+import { PanelAppearance } from "@/components/admin/PanelAppearance";
 
 export type NavItem = { label: string; seg: string; icon: LucideIcon; key?: string; badge?: number };
 
@@ -43,6 +45,8 @@ export function AdminShell({
   basePath = "/admin",
   brandName = "Van",
   navItems,
+  accent = "#6D4AFF",
+  themeScope,
 }: {
   children: React.ReactNode;
   email: string;
@@ -54,6 +58,10 @@ export function AdminShell({
   basePath?: string;
   brandName?: string;
   navItems?: NavItem[];
+  /** Couleur d'origine du panel (marque du site, ou du métier en démo). */
+  accent?: string;
+  /** Cloisonne la préférence d'apparence (admin réel vs chaque démo). */
+  themeScope?: string;
 }) {
   const nav = navItems ?? NAV;
   const pathname = usePathname();
@@ -174,6 +182,7 @@ export function AdminShell({
   );
 
   return (
+    <PanelThemeProvider defaultAccent={accent} scope={themeScope ?? (demoMode ? basePath : "admin")}>
     <div className="flex min-h-screen bg-ink text-white">
       {/* Sidebar desktop */}
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r border-white/8 bg-ink-soft lg:block">
@@ -216,6 +225,7 @@ export function AdminShell({
           </div>
 
           <div className="ml-auto flex items-center gap-2">
+            <PanelAppearance />
             <div className="relative">
               <button
                 onClick={openNotifications}
@@ -296,5 +306,6 @@ export function AdminShell({
         <main className="flex-1 p-4 sm:p-6">{children}</main>
       </div>
     </div>
+    </PanelThemeProvider>
   );
 }

@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { Clock, ShieldCheck, Gift } from "lucide-react";
 import { PageHeader } from "@/components/sections/PageHeader";
 import { DevisForm } from "./DevisForm";
-import { getSiteSettings } from "@/lib/data";
+import { getSiteSettings, activeDiscount } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "Demande de devis",
@@ -52,7 +52,11 @@ export default async function DevisPage() {
               <div className="gradient-border h-[520px] animate-pulse rounded-3xl bg-ink-card/60" />
             }
           >
-            <DevisForm turnstileKey={settings.turnstile_site_key} />
+            <DevisForm
+              turnstileKey={settings.turnstile_site_key}
+              catalogOverrides={settings.catalog}
+              discount={activeDiscount(settings)}
+            />
           </Suspense>
         </div>
       </section>

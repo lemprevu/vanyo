@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { AdminShell, NAV } from "./AdminShell";
 import { getCurrentAdminProfile, canAccess } from "@/lib/permissions";
 import type { PermissionKey } from "@/lib/types";
+import { getSiteSettings } from "@/lib/data";
 
 /** Utilisateurs et Journal d'activité restent réservés aux Administrateurs, non attribuables. */
 const ADMIN_ONLY_SEGMENTS = new Set(["/utilisateurs", "/journal"]);
@@ -16,6 +17,7 @@ export default async function PanelLayout({
   children: React.ReactNode;
 }) {
   const supabase = await createClient();
+  const settings = await getSiteSettings();
 
   // Supabase non configuré : mode démonstration (accès ouvert, données fictives).
   if (!supabase) {
@@ -24,6 +26,7 @@ export default async function PanelLayout({
         email="demo@vanyo.fr"
         live={false}
         counts={{ devis: 3, messages: 2 }}
+        accent={settings.brand_color}
         notifications={[
           { id: "1", type: "devis", text: "Nouvelle demande de devis — Maison Laurent", time: "Il y a 12 min" },
           { id: "2", type: "message", text: "Nouveau message de contact", time: "Il y a 1 h" },
@@ -88,6 +91,7 @@ export default async function PanelLayout({
       counts={{ devis: devisCount ?? 0, messages: msgCount ?? 0 }}
       notifications={notifications}
       navItems={navItems}
+      accent={settings.brand_color}
     >
       {children}
     </AdminShell>

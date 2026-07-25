@@ -9,6 +9,10 @@
  * Conséquence voulue : il est impossible que le comparatif et le formulaire de
  * devis se contredisent, puisqu'ils lisent les mêmes objets.
  *
+ * Les valeurs ci-dessous sont les valeurs PAR DÉFAUT. Elles peuvent toutes être
+ * modifiées depuis le panel admin (Paramètres → Tarifs) : les modifications
+ * sont stockées dans `site_settings.catalog` et appliquées par `resolveCatalog`.
+ *
  * Les prix sont en euros, hors taxes, et s'entendent « à partir de ».
  */
 
@@ -25,58 +29,54 @@ export type SiteModule = {
   /** Prix ponctuel si le module n'est pas déjà compris dans la formule. */
   price: number;
   group: ModuleGroup;
-  /** Nom d'icône lucide (voir components/ui/Icon.tsx et le formulaire). */
+  /** Nom d'icône lucide (voir le formulaire de devis). */
   icon: string;
 };
 
-export const MODULES: SiteModule[] = [
+const DEFAULT_MODULES: SiteModule[] = [
   // ── Contenu ──────────────────────────────────────────────────────
-  { key: "galerie", label: "Galerie photos", description: "Vos visuels mis en valeur, avec vue plein écran.", price: 120, group: "Contenu", icon: "Image" },
-  { key: "blog", label: "Blog / actualités", description: "Publiez articles et actualités depuis votre panel.", price: 250, group: "Contenu", icon: "Newspaper" },
-  { key: "multilingue", label: "Site multilingue", description: "Une seconde langue complète, avec bascule automatique.", price: 350, group: "Contenu", icon: "Languages" },
-  { key: "redaction", label: "Rédaction des textes", description: "On écrit le contenu de vos pages (jusqu'à 5 pages).", price: 290, group: "Contenu", icon: "PenTool" },
-  { key: "logo", label: "Création de logo", description: "3 pistes créatives, fichiers vectoriels livrés.", price: 250, group: "Contenu", icon: "Sparkles" },
-  { key: "charte", label: "Charte graphique complète", description: "Couleurs, typographies, déclinaisons et guide d'usage.", price: 450, group: "Contenu", icon: "Palette" },
+  { key: "galerie", label: "Galerie photos", description: "Vos visuels mis en valeur, avec vue plein écran.", price: 80, group: "Contenu", icon: "Image" },
+  { key: "blog", label: "Blog / actualités", description: "Publiez articles et actualités depuis votre panel.", price: 170, group: "Contenu", icon: "Newspaper" },
+  { key: "multilingue", label: "Site multilingue", description: "Une seconde langue complète, avec bascule automatique.", price: 240, group: "Contenu", icon: "Languages" },
+  { key: "redaction", label: "Rédaction des textes", description: "On écrit le contenu de vos pages (jusqu'à 5 pages).", price: 190, group: "Contenu", icon: "PenTool" },
+  { key: "logo", label: "Création de logo", description: "3 pistes créatives, fichiers vectoriels livrés.", price: 170, group: "Contenu", icon: "Sparkles" },
+  { key: "charte", label: "Charte graphique complète", description: "Couleurs, typographies, déclinaisons et guide d'usage.", price: 290, group: "Contenu", icon: "Palette" },
 
   // ── Conversion ───────────────────────────────────────────────────
   { key: "contact", label: "Formulaire de contact", description: "Réception directe par e-mail, protégé anti-spam.", price: 0, group: "Conversion", icon: "Mail" },
-  { key: "formulaire_avance", label: "Formulaire avancé multi-étapes", description: "Parcours guidé, champs conditionnels, pièces jointes.", price: 180, group: "Conversion", icon: "ClipboardList" },
-  { key: "rdv", label: "Prise de rendez-vous en ligne", description: "Vos créneaux disponibles, réservables 24 h/24.", price: 350, group: "Conversion", icon: "CalendarCheck" },
-  { key: "reservation", label: "Réservation (couverts, créneaux…)", description: "Gestion des disponibilités et confirmations automatiques.", price: 390, group: "Conversion", icon: "CalendarClock" },
-  { key: "newsletter", label: "Inscription newsletter", description: "Collecte des e-mails et export de votre liste.", price: 150, group: "Conversion", icon: "Send" },
-  { key: "chat", label: "Chat en direct", description: "Discutez avec vos visiteurs depuis votre téléphone.", price: 150, group: "Conversion", icon: "MessageCircle" },
-  { key: "avis", label: "Avis clients", description: "Collecte, modération et affichage de vos avis.", price: 180, group: "Conversion", icon: "Star" },
+  { key: "formulaire_avance", label: "Formulaire avancé multi-étapes", description: "Parcours guidé, champs conditionnels, pièces jointes.", price: 120, group: "Conversion", icon: "ClipboardList" },
+  { key: "rdv", label: "Prise de rendez-vous en ligne", description: "Vos créneaux disponibles, réservables 24 h/24.", price: 240, group: "Conversion", icon: "CalendarCheck" },
+  { key: "reservation", label: "Réservation (couverts, créneaux…)", description: "Gestion des disponibilités et confirmations automatiques.", price: 270, group: "Conversion", icon: "CalendarClock" },
+  { key: "newsletter", label: "Inscription newsletter", description: "Collecte des e-mails et export de votre liste.", price: 90, group: "Conversion", icon: "Send" },
+  { key: "chat", label: "Chat en direct", description: "Discutez avec vos visiteurs depuis votre téléphone.", price: 90, group: "Conversion", icon: "MessageCircle" },
+  { key: "avis", label: "Avis clients", description: "Collecte, modération et affichage de vos avis.", price: 120, group: "Conversion", icon: "Star" },
 
   // ── Vente ────────────────────────────────────────────────────────
-  { key: "paiement", label: "Paiement en ligne", description: "Encaissement sécurisé par carte (Stripe).", price: 400, group: "Vente", icon: "CreditCard" },
-  { key: "boutique", label: "Boutique e-commerce", description: "Catalogue, panier, commandes et stocks.", price: 800, group: "Vente", icon: "ShoppingCart" },
-  { key: "espace_client", label: "Espace client / connexion", description: "Comptes sécurisés et contenu réservé à vos clients.", price: 450, group: "Vente", icon: "LogIn" },
-  { key: "devis_ligne", label: "Demande de devis en ligne", description: "Un formulaire de devis détaillé, comme celui-ci.", price: 200, group: "Vente", icon: "FileText" },
+  { key: "paiement", label: "Paiement en ligne", description: "Encaissement sécurisé par carte (Stripe).", price: 280, group: "Vente", icon: "CreditCard" },
+  { key: "boutique", label: "Boutique e-commerce", description: "Catalogue, panier, commandes et stocks.", price: 550, group: "Vente", icon: "ShoppingCart" },
+  { key: "espace_client", label: "Espace client / connexion", description: "Comptes sécurisés et contenu réservé à vos clients.", price: 310, group: "Vente", icon: "LogIn" },
+  { key: "devis_ligne", label: "Demande de devis en ligne", description: "Un formulaire de devis détaillé, comme celui-ci.", price: 140, group: "Vente", icon: "FileText" },
 
   // ── Gestion ──────────────────────────────────────────────────────
-  { key: "admin", label: "Panel administrateur", description: "Modifiez vos textes, photos et contenus vous-même.", price: 400, group: "Gestion", icon: "LayoutDashboard" },
-  { key: "dashboard", label: "Tableau de bord & statistiques", description: "Vos chiffres clés en un coup d'œil.", price: 350, group: "Gestion", icon: "BarChart3" },
-  { key: "planning", label: "Planning / agenda", description: "Vue calendrier de vos rendez-vous et réservations.", price: 300, group: "Gestion", icon: "CalendarDays" },
-  { key: "utilisateurs", label: "Comptes & rôles", description: "Plusieurs accès, avec des permissions par personne.", price: 250, group: "Gestion", icon: "Users" },
-  { key: "journal", label: "Journal d'activité", description: "L'historique de toutes les actions faites sur le site.", price: 150, group: "Gestion", icon: "ScrollText" },
+  { key: "admin", label: "Panel administrateur", description: "Modifiez vos textes, photos et contenus vous-même.", price: 270, group: "Gestion", icon: "LayoutDashboard" },
+  { key: "dashboard", label: "Tableau de bord & statistiques", description: "Vos chiffres clés en un coup d'œil.", price: 240, group: "Gestion", icon: "BarChart3" },
+  { key: "planning", label: "Planning / agenda", description: "Vue calendrier de vos rendez-vous et réservations.", price: 200, group: "Gestion", icon: "CalendarDays" },
+  { key: "utilisateurs", label: "Comptes & rôles", description: "Plusieurs accès, avec des permissions par personne.", price: 170, group: "Gestion", icon: "Users" },
+  { key: "journal", label: "Journal d'activité", description: "L'historique de toutes les actions faites sur le site.", price: 90, group: "Gestion", icon: "ScrollText" },
 
   // ── Visibilité ───────────────────────────────────────────────────
   { key: "seo_base", label: "SEO de base", description: "Structure, balises, sitemap et vitesse optimisés.", price: 0, group: "Visibilité", icon: "Search" },
-  { key: "seo_avance", label: "SEO avancé", description: "Audit, mots-clés, données structurées et contenu optimisé.", price: 300, group: "Visibilité", icon: "TrendingUp" },
-  { key: "seo_local", label: "Référencement local", description: "Fiche Google Business et pages par zone d'intervention.", price: 190, group: "Visibilité", icon: "MapPin" },
-  { key: "analytics", label: "Analytics & Search Console", description: "Mesure du trafic et suivi de votre référencement.", price: 90, group: "Visibilité", icon: "Gauge" },
-  { key: "animations", label: "Animations avancées", description: "Transitions et effets soignés, sans nuire à la vitesse.", price: 250, group: "Visibilité", icon: "Zap" },
-  { key: "perf", label: "Optimisation performances poussée", description: "Objectif 95+ sur Lighthouse, images et code au régime.", price: 200, group: "Visibilité", icon: "Rocket" },
+  { key: "seo_avance", label: "SEO avancé", description: "Audit, mots-clés, données structurées et contenu optimisé.", price: 200, group: "Visibilité", icon: "TrendingUp" },
+  { key: "seo_local", label: "Référencement local", description: "Fiche Google Business et pages par zone d'intervention.", price: 130, group: "Visibilité", icon: "MapPin" },
+  { key: "analytics", label: "Analytics & Search Console", description: "Mesure du trafic et suivi de votre référencement.", price: 60, group: "Visibilité", icon: "Gauge" },
+  { key: "animations", label: "Animations avancées", description: "Transitions et effets soignés, sans nuire à la vitesse.", price: 170, group: "Visibilité", icon: "Zap" },
+  { key: "perf", label: "Optimisation performances poussée", description: "Objectif 95+ sur Lighthouse, images et code au régime.", price: 140, group: "Visibilité", icon: "Rocket" },
 ];
-
-export const MODULES_BY_KEY: Record<string, SiteModule> = Object.fromEntries(
-  MODULES.map((m) => [m.key, m])
-);
 
 export const MODULE_GROUPS: ModuleGroup[] = ["Contenu", "Conversion", "Vente", "Gestion", "Visibilité"];
 
-/** Prix d'une page au-delà de ce que la formule comprend. */
-export const EXTRA_PAGE_PRICE = 90;
+/** Prix par défaut d'une page au-delà de ce que la formule comprend. */
+const DEFAULT_EXTRA_PAGE_PRICE = 60;
 
 /* ------------------------------------------------------------------ */
 /*  Formules                                                           */
@@ -92,7 +92,7 @@ export type Pack = {
   /** Prix de base, ou null pour « Sur devis ». */
   base: number | null;
   /** Prix conseillé barré, pour afficher la remise. */
-  originalPrice?: number;
+  originalPrice?: number | null;
   pagesIncluded: number;
   /** Libellé affiché pour le nombre de pages (comparatif). */
   pagesLabel: string;
@@ -116,70 +116,64 @@ const PREMIUM_MODULES = [
   "formulaire_avance", "rdv", "seo_local", "perf",
 ];
 
-export const PACKS: Pack[] = [
+const DEFAULT_PACKS: Pack[] = [
   {
     key: "starter",
     name: "Starter",
     tagline: "Idéal pour lancer une présence en ligne soignée.",
-    base: 500,
-    originalPrice: 720,
+    base: 390,
+    originalPrice: 590,
     pagesIncluded: 3,
     pagesLabel: "1 à 3",
     includes: STARTER_MODULES,
     support: "30 jours",
     delai: "5 à 8 jours",
-    maintenanceOfferte: 0,
+    maintenanceOfferte: 1,
   },
   {
     key: "business",
     name: "Business",
     tagline: "Le choix des entreprises qui veulent convertir.",
-    base: 1200,
-    originalPrice: 1750,
+    base: 890,
+    originalPrice: 1290,
     pagesIncluded: 8,
     pagesLabel: "jusqu'à 8",
     highlight: true,
     includes: BUSINESS_MODULES,
     support: "3 mois",
     delai: "10 à 15 jours",
-    maintenanceOfferte: 1,
+    maintenanceOfferte: 3,
   },
   {
     key: "premium",
     name: "Premium",
     tagline: "Pour un projet ambitieux et évolutif.",
-    base: 2500,
-    originalPrice: 3600,
+    base: 1790,
+    originalPrice: 2590,
     pagesIncluded: PAGES_UNLIMITED,
     pagesLabel: "Illimité",
     includes: PREMIUM_MODULES,
     support: "12 mois",
     delai: "3 à 5 semaines",
-    maintenanceOfferte: 3,
+    maintenanceOfferte: 6,
   },
   {
     key: "surmesure",
     name: "Sur Mesure",
     tagline: "Application web, plateforme ou besoin spécifique.",
     base: null,
+    originalPrice: null,
     pagesIncluded: PAGES_UNLIMITED,
     pagesLabel: "Illimité",
     includes: [...PREMIUM_MODULES, "boutique", "paiement", "multilingue", "devis_ligne"],
     support: "Dédié",
     delai: "Sur mesure",
-    maintenanceOfferte: 3,
+    maintenanceOfferte: 6,
   },
 ];
 
-export const PACKS_BY_KEY: Record<string, Pack> = Object.fromEntries(PACKS.map((p) => [p.key, p]));
-
 /** Choix « je ne sais pas encore » proposé dans le formulaire. */
 export const PACK_UNDECIDED = "conseillez_moi";
-
-export function packIncludes(packKey: string | null | undefined, moduleKey: string): boolean {
-  const pack = packKey ? PACKS_BY_KEY[packKey] : undefined;
-  return !!pack && pack.includes.includes(moduleKey);
-}
 
 /* ------------------------------------------------------------------ */
 /*  Mise en ligne (déploiement / installation)                         */
@@ -194,7 +188,7 @@ export type DeploymentOption = {
   includes: string[];
 };
 
-export const DEPLOIEMENTS: DeploymentOption[] = [
+const DEFAULT_DEPLOIEMENTS: DeploymentOption[] = [
   {
     key: "aucun",
     label: "Je m'en occupe moi-même",
@@ -206,7 +200,7 @@ export const DEPLOIEMENTS: DeploymentOption[] = [
     key: "installation",
     label: "Installation & mise en ligne",
     description: "On déploie le site sur un hébergement performant, prêt à l'emploi. Sans nom de domaine.",
-    price: 149,
+    price: 89,
     includes: [
       "Déploiement sur hébergement rapide",
       "Certificat HTTPS / SSL configuré",
@@ -218,7 +212,7 @@ export const DEPLOIEMENTS: DeploymentOption[] = [
     key: "installation_domaine",
     label: "Installation + nom de domaine",
     description: "Tout ce qui précède, plus la réservation et la configuration complète de votre nom de domaine.",
-    price: 249,
+    price: 149,
     includes: [
       "Tout de « Installation & mise en ligne »",
       "Réservation du nom de domaine (.fr ou .com)",
@@ -230,7 +224,7 @@ export const DEPLOIEMENTS: DeploymentOption[] = [
     key: "installation_domaine_emails",
     label: "Installation + domaine + e-mails pro",
     description: "La formule complète : votre site en ligne, votre domaine et vos adresses e-mail professionnelles.",
-    price: 349,
+    price: 199,
     includes: [
       "Tout de « Installation + nom de domaine »",
       "3 adresses @votredomaine créées",
@@ -239,10 +233,6 @@ export const DEPLOIEMENTS: DeploymentOption[] = [
     ],
   },
 ];
-
-export const DEPLOIEMENTS_BY_KEY: Record<string, DeploymentOption> = Object.fromEntries(
-  DEPLOIEMENTS.map((d) => [d.key, d])
-);
 
 /* ------------------------------------------------------------------ */
 /*  Maintenance mensuelle                                              */
@@ -258,7 +248,12 @@ export type MaintenancePlan = {
   recommended?: boolean;
 };
 
-export const MAINTENANCE_PLANS: MaintenancePlan[] = [
+/**
+ * Les formules ne contiennent QUE des prestations légères ou automatisées :
+ * surveillance, sauvegardes, mises à jour, rapports générés. Les quelques
+ * interventions manuelles sont bornées en nombre, jamais « illimitées ».
+ */
+const DEFAULT_MAINTENANCE_PLANS: MaintenancePlan[] = [
   {
     key: "aucune",
     label: "Aucune",
@@ -270,11 +265,11 @@ export const MAINTENANCE_PLANS: MaintenancePlan[] = [
     key: "essentiel",
     label: "Essentiel",
     description: "Le socle : votre site reste en ligne, à jour et sécurisé.",
-    price: 19,
+    price: 12,
     features: [
       "Hébergement et nom de domaine maintenus",
       "Certificat HTTPS renouvelé automatiquement",
-      "Sauvegardes hebdomadaires",
+      "Sauvegardes automatiques hebdomadaires",
       "Mises à jour de sécurité",
       "Surveillance de disponibilité 24 h/24",
     ],
@@ -282,35 +277,31 @@ export const MAINTENANCE_PLANS: MaintenancePlan[] = [
   {
     key: "confort",
     label: "Confort",
-    description: "Le plus choisi : on s'occupe aussi de faire vivre votre site.",
-    price: 39,
+    description: "Le plus choisi : on s'occupe aussi des petites retouches.",
+    price: 29,
     recommended: true,
     features: [
       "Tout l'Essentiel",
-      "1 h de modifications par mois (textes, photos)",
+      "3 modifications de contenu par mois",
       "Rapport mensuel de fréquentation",
-      "Support prioritaire sous 48 h ouvrées",
+      "Support par email sous 48 h ouvrées",
       "Restauration en cas de problème",
     ],
   },
   {
     key: "serenite",
     label: "Sérénité",
-    description: "Vous ne touchez à rien : on pilote le site et sa visibilité.",
-    price: 79,
+    description: "Le confort, avec plus de retouches et le suivi Google.",
+    price: 59,
     features: [
       "Tout le Confort",
-      "3 h de modifications par mois",
-      "Suivi de positionnement Google",
-      "Optimisation continue des performances",
-      "Support sous 24 h ouvrées",
+      "8 modifications de contenu par mois",
+      "Rapport de positionnement Google",
+      "Sauvegardes quotidiennes",
+      "Support par email sous 24 h ouvrées",
     ],
   },
 ];
-
-export const MAINTENANCE_PLANS_BY_KEY: Record<string, MaintenancePlan> = Object.fromEntries(
-  MAINTENANCE_PLANS.map((p) => [p.key, p])
-);
 
 export type MaintenanceOption = {
   key: string;
@@ -324,24 +315,21 @@ export type MaintenanceOption = {
 
 /**
  * Suppléments mensuels cumulables. Volontairement limités à des prestations
- * simples et récurrentes, dont le prix reflète le temps réel qu'elles coûtent.
+ * simples : soit automatisées (sauvegardes, alertes, rapports), soit bornées
+ * à un petit nombre d'actions par mois. Rien d'ouvert ni de rédactionnel.
  */
-export const MAINTENANCE_OPTIONS: MaintenanceOption[] = [
-  { key: "backup_quotidien", label: "Sauvegardes quotidiennes", description: "Au lieu d'hebdomadaires, conservées 30 jours.", price: 5, requiresPlan: true },
-  { key: "domaine_sup", label: "Nom de domaine supplémentaire", description: "Réservation et redirection vers votre site.", price: 3, requiresPlan: true },
-  { key: "emails_sup", label: "3 adresses e-mail supplémentaires", description: "Créées et configurées sur vos appareils.", price: 6, requiresPlan: true },
-  { key: "avis_suivi", label: "Surveillance des avis clients", description: "On vous alerte à chaque nouvel avis et on publie vos réponses.", price: 10, requiresPlan: true },
-  { key: "suivi_seo", label: "Suivi de positionnement Google", description: "Rapport mensuel de vos mots-clés et de votre trafic.", price: 15, requiresPlan: true },
-  { key: "articles_publies", label: "Publication de 2 articles / mois", description: "Vous fournissez le texte, on met en forme, on illustre et on publie.", price: 15, requiresPlan: true },
-  { key: "fiches", label: "Mise à jour de fiches", description: "Jusqu'à 20 produits, biens ou annonces mis à jour par mois.", price: 20, requiresPlan: true },
-  { key: "contenu_illimite", label: "Modifications de contenu illimitées", description: "Textes et photos, sans compter les heures, sous 48 h ouvrées.", price: 25, requiresPlan: true },
-  { key: "astreinte", label: "Support prioritaire 7 j/7", description: "Réponse garantie sous 4 h, week-ends et jours fériés compris.", price: 29, requiresPlan: true },
-  { key: "articles_rediges", label: "Rédaction + publication de 2 articles / mois", description: "Choix des sujets, rédaction optimisée SEO et publication.", price: 59, requiresPlan: true },
+const DEFAULT_MAINTENANCE_OPTIONS: MaintenanceOption[] = [
+  { key: "domaine_sup", label: "Nom de domaine supplémentaire", description: "Réservation et redirection vers votre site. Configuré une fois.", price: 3, requiresPlan: true },
+  { key: "backup_quotidien", label: "Sauvegardes quotidiennes", description: "Au lieu d'hebdomadaires, conservées 30 jours. Automatique.", price: 4, requiresPlan: true },
+  { key: "emails_sup", label: "3 adresses e-mail supplémentaires", description: "Créées une fois, puis rien à gérer.", price: 5, requiresPlan: true },
+  { key: "monitoring", label: "Alerte immédiate en cas de panne", description: "Surveillance renforcée et notification automatique.", price: 5, requiresPlan: true },
+  { key: "staging", label: "Copie de test avant modification", description: "Un double du site pour valider avant publication. Automatique.", price: 6, requiresPlan: true },
+  { key: "avis_alertes", label: "Alertes sur les nouveaux avis", description: "Notification à chaque avis, et publication de votre réponse.", price: 7, requiresPlan: true },
+  { key: "photos", label: "Ajout de 5 photos par mois", description: "Vous envoyez les photos, on les intègre et on les optimise.", price: 9, requiresPlan: true },
+  { key: "rapport_seo", label: "Rapport de positionnement Google", description: "Vos mots-clés et votre trafic, rapport généré chaque mois.", price: 9, requiresPlan: true },
+  { key: "publication_articles", label: "Publication de 2 articles par mois", description: "Vous fournissez le texte, on le met en forme et on publie.", price: 12, requiresPlan: true },
+  { key: "modifs_sup", label: "5 modifications de contenu en plus", description: "Textes et photos, en complément de votre formule.", price: 15, requiresPlan: true },
 ];
-
-export const MAINTENANCE_OPTIONS_BY_KEY: Record<string, MaintenanceOption> = Object.fromEntries(
-  MAINTENANCE_OPTIONS.map((o) => [o.key, o])
-);
 
 /* ------------------------------------------------------------------ */
 /*  Délai de livraison                                                 */
@@ -349,12 +337,117 @@ export const MAINTENANCE_OPTIONS_BY_KEY: Record<string, MaintenanceOption> = Obj
 
 export type DelaiOption = { key: string; label: string; description: string; price: number };
 
-export const DELAIS: DelaiOption[] = [
+const DEFAULT_DELAIS: DelaiOption[] = [
   { key: "standard", label: "Délai standard", description: "Le rythme normal de production, indiqué par votre formule.", price: 0 },
-  { key: "prioritaire", label: "Livraison prioritaire", description: "Votre projet passe en tête de file : délai réduit d'environ moitié.", price: 200 },
+  { key: "prioritaire", label: "Livraison prioritaire", description: "Votre projet passe en tête de file : délai réduit d'environ moitié.", price: 140 },
 ];
 
-export const DELAIS_BY_KEY: Record<string, DelaiOption> = Object.fromEntries(DELAIS.map((d) => [d.key, d]));
+/* ------------------------------------------------------------------ */
+/*  Personnalisation depuis le panel admin                             */
+/* ------------------------------------------------------------------ */
+
+type Override<T> = Partial<T>;
+
+/**
+ * Modifications apportées au catalogue depuis Paramètres → Tarifs.
+ * Stockées telles quelles dans `site_settings.catalog` (JSONB).
+ * Tout champ absent garde sa valeur par défaut : une mise à jour du catalogue
+ * par défaut profite donc automatiquement aux champs non personnalisés.
+ */
+export type CatalogOverrides = {
+  extraPagePrice?: number;
+  packs?: Record<string, Override<Pack>>;
+  modules?: Record<string, Override<SiteModule>>;
+  deploiements?: Record<string, Override<DeploymentOption>>;
+  maintenancePlans?: Record<string, Override<MaintenancePlan>>;
+  maintenanceOptions?: Record<string, Override<MaintenanceOption>>;
+  delais?: Record<string, Override<DelaiOption>>;
+};
+
+export type Catalog = {
+  packs: Pack[];
+  packsByKey: Record<string, Pack>;
+  modules: SiteModule[];
+  modulesByKey: Record<string, SiteModule>;
+  deploiements: DeploymentOption[];
+  deploiementsByKey: Record<string, DeploymentOption>;
+  maintenancePlans: MaintenancePlan[];
+  maintenancePlansByKey: Record<string, MaintenancePlan>;
+  maintenanceOptions: MaintenanceOption[];
+  maintenanceOptionsByKey: Record<string, MaintenanceOption>;
+  delais: DelaiOption[];
+  delaisByKey: Record<string, DelaiOption>;
+  extraPagePrice: number;
+};
+
+/** Applique les personnalisations sur une liste d'éléments identifiés par `key`. */
+function merge<T extends { key: string }>(base: T[], over?: Record<string, Override<T>>): T[] {
+  if (!over) return base;
+  return base.map((item) => {
+    const patch = over[item.key];
+    if (!patch) return item;
+    // On ignore les valeurs `undefined` du patch pour ne jamais écraser
+    // une valeur par défaut par du vide.
+    const clean = Object.fromEntries(
+      Object.entries(patch).filter(([, v]) => v !== undefined)
+    ) as Override<T>;
+    return { ...item, ...clean };
+  });
+}
+
+const byKey = <T extends { key: string }>(list: T[]): Record<string, T> =>
+  Object.fromEntries(list.map((i) => [i.key, i]));
+
+/** Construit le catalogue effectif : valeurs par défaut + personnalisations. */
+export function resolveCatalog(overrides?: CatalogOverrides | null): Catalog {
+  const packs = merge(DEFAULT_PACKS, overrides?.packs);
+  const modules = merge(DEFAULT_MODULES, overrides?.modules);
+  const deploiements = merge(DEFAULT_DEPLOIEMENTS, overrides?.deploiements);
+  const maintenancePlans = merge(DEFAULT_MAINTENANCE_PLANS, overrides?.maintenancePlans);
+  const maintenanceOptions = merge(DEFAULT_MAINTENANCE_OPTIONS, overrides?.maintenanceOptions);
+  const delais = merge(DEFAULT_DELAIS, overrides?.delais);
+
+  return {
+    packs, packsByKey: byKey(packs),
+    modules, modulesByKey: byKey(modules),
+    deploiements, deploiementsByKey: byKey(deploiements),
+    maintenancePlans, maintenancePlansByKey: byKey(maintenancePlans),
+    maintenanceOptions, maintenanceOptionsByKey: byKey(maintenanceOptions),
+    delais, delaisByKey: byKey(delais),
+    extraPagePrice: overrides?.extraPagePrice ?? DEFAULT_EXTRA_PAGE_PRICE,
+  };
+}
+
+/** Catalogue par défaut, sans aucune personnalisation. */
+export const DEFAULT_CATALOG: Catalog = resolveCatalog(null);
+
+// Raccourcis pratiques pour le code qui n'a pas besoin des personnalisations
+// (valeurs de repli, seeds de démonstration, tests).
+export const PACKS = DEFAULT_CATALOG.packs;
+export const MODULES = DEFAULT_CATALOG.modules;
+export const DEPLOIEMENTS = DEFAULT_CATALOG.deploiements;
+export const MAINTENANCE_PLANS = DEFAULT_CATALOG.maintenancePlans;
+export const MAINTENANCE_OPTIONS = DEFAULT_CATALOG.maintenanceOptions;
+export const DELAIS = DEFAULT_CATALOG.delais;
+export const EXTRA_PAGE_PRICE = DEFAULT_CATALOG.extraPagePrice;
+
+/* ------------------------------------------------------------------ */
+/*  Remises                                                            */
+/* ------------------------------------------------------------------ */
+
+export type Discount = { label: string; percent: number };
+
+/** Remise « catalogue » d'une formule (prix conseillé barré → prix affiché). */
+export function packDiscountPercent(pack: Pack): number {
+  if (pack.base === null || !pack.originalPrice || pack.originalPrice <= pack.base) return 0;
+  return Math.round((1 - pack.base / pack.originalPrice) * 100);
+}
+
+/** Applique une remise en pourcentage à un montant, arrondi à l'euro. */
+export function applyDiscount(amount: number, percent: number): number {
+  if (!percent) return amount;
+  return Math.max(0, Math.round(amount * (1 - percent / 100)));
+}
 
 /* ------------------------------------------------------------------ */
 /*  Comparatif /tarifs — dérivé des formules ci-dessus                 */
@@ -373,43 +466,52 @@ const COMPARE_MODULES = [
  * Construit le tableau comparatif directement à partir des formules, pour
  * qu'il ne puisse jamais diverger de ce que le formulaire de devis facture.
  */
-export function buildCompareRows(): CompareRow[] {
+export function buildCompareRows(catalog: Catalog = DEFAULT_CATALOG): CompareRow[] {
+  const { packs, modulesByKey, deploiements, maintenancePlans, extraPagePrice } = catalog;
+
   const rows: CompareRow[] = [
-    { feature: "Design 100 % sur mesure", values: PACKS.map(() => true) },
-    { feature: "Compatible mobile et ordinateur", values: PACKS.map(() => true) },
-    { feature: "Certificat SSL sécurisé", values: PACKS.map(() => true) },
-    { feature: "Nombre de pages comprises", values: PACKS.map((p) => p.pagesLabel) },
-    { feature: "Formulaire de contact", values: PACKS.map(() => true) },
-    { feature: "SEO de base", values: PACKS.map(() => true) },
+    { feature: "Design 100 % sur mesure", values: packs.map(() => true) },
+    { feature: "Compatible mobile et ordinateur", values: packs.map(() => true) },
+    { feature: "Certificat SSL sécurisé", values: packs.map(() => true) },
+    { feature: "Nombre de pages comprises", values: packs.map((p) => p.pagesLabel) },
+    { feature: "Formulaire de contact", values: packs.map(() => true) },
+    { feature: "SEO de base", values: packs.map(() => true) },
   ];
 
   for (const key of COMPARE_MODULES) {
-    const mod = MODULES_BY_KEY[key];
+    const mod = modulesByKey[key];
     if (!mod) continue;
     rows.push({
       feature: mod.label,
-      values: PACKS.map((p) => (p.includes.includes(key) ? true : mod.price ? `+${mod.price} €` : false)),
+      values: packs.map((p) => (p.includes.includes(key) ? true : mod.price ? `+${mod.price} €` : false)),
     });
   }
 
+  const install = deploiements.find((d) => d.key === "installation");
+  const domaine = deploiements.find((d) => d.key === "installation_domaine");
+  const essentiel = maintenancePlans.find((p) => p.key === "essentiel");
+
   rows.push(
-    { feature: "Page supplémentaire", values: PACKS.map((p) => (p.pagesIncluded >= PAGES_UNLIMITED ? "Incluse" : `+${EXTRA_PAGE_PRICE} €`)) },
-    { feature: "Mise en ligne (installation)", values: PACKS.map(() => `À partir de ${DEPLOIEMENTS[1].price} €`) },
-    { feature: "Nom de domaine + configuration", values: PACKS.map(() => `+${DEPLOIEMENTS[2].price - DEPLOIEMENTS[1].price} €`) },
-    { feature: "Maintenance offerte", values: PACKS.map((p) => (p.maintenanceOfferte ? `${p.maintenanceOfferte} mois` : "—")) },
-    { feature: "Maintenance ensuite", values: PACKS.map(() => `À partir de ${MAINTENANCE_PLANS[1].price} €/mois`) },
-    { feature: "Support après livraison", values: PACKS.map((p) => p.support) },
-    { feature: "Délai indicatif", values: PACKS.map((p) => p.delai) }
+    { feature: "Page supplémentaire", values: packs.map((p) => (p.pagesIncluded >= PAGES_UNLIMITED ? "Incluse" : `+${extraPagePrice} €`)) },
+    { feature: "Mise en ligne (installation)", values: packs.map(() => (install ? `À partir de ${install.price} €` : "—")) },
+    {
+      feature: "Nom de domaine + configuration",
+      values: packs.map(() => (install && domaine ? `+${Math.max(0, domaine.price - install.price)} €` : "—")),
+    },
+    { feature: "Maintenance offerte", values: packs.map((p) => (p.maintenanceOfferte ? `${p.maintenanceOfferte} mois` : "—")) },
+    { feature: "Maintenance ensuite", values: packs.map(() => (essentiel ? `À partir de ${essentiel.price} €/mois` : "—")) },
+    { feature: "Support après livraison", values: packs.map((p) => p.support) },
+    { feature: "Délai indicatif", values: packs.map((p) => p.delai) }
   );
 
   return rows;
 }
 
 /**
- * Les 7 points forts affichés sur la carte d'une formule (page Tarifs).
+ * Les points forts affichés sur la carte d'une formule (page Tarifs).
  * Dérivés des modules compris, pour rester cohérents avec le comparatif.
  */
-export function packHighlights(pack: Pack): string[] {
+export function packHighlights(pack: Pack, catalog: Catalog = DEFAULT_CATALOG): string[] {
   const base: string[] = [
     pack.pagesIncluded >= PAGES_UNLIMITED
       ? "Nombre de pages illimité"
@@ -422,7 +524,7 @@ export function packHighlights(pack: Pack): string[] {
   const socle = new Set(["contact", "seo_base", "galerie"]);
   const distinctifs = pack.includes
     .filter((k) => !socle.has(k))
-    .map((k) => MODULES_BY_KEY[k]?.label)
+    .map((k) => catalog.modulesByKey[k]?.label)
     .filter((l): l is string => !!l);
 
   const queue: string[] = [];

@@ -110,7 +110,10 @@ export type Devis = {
   ville?: string | null;
   code_postal?: string | null;
   pays?: string | null;
-  type_site?: string | null;
+  /** Types de site retenus (multi-sélection). */
+  types_site?: string[] | null;
+  /** Objectifs retenus (multi-sélection). */
+  objectifs?: string[] | null;
   site_existant?: string | null;
   lien_actuel?: string | null;
   logo?: string | null;
@@ -123,7 +126,6 @@ export type Devis = {
   viewed?: boolean;
 
   // ── Questionnaire « Style & contenu » ──────────────────────────
-  objectif?: string | null;
   style_visuel?: string | null;
   ambiance?: string | null;
   couleurs_souhaitees?: string | null;
@@ -153,8 +155,15 @@ export type Devis = {
   estimation?: number | null;
   /** Estimation mensuelle affichée au client au moment de l'envoi. */
   estimation_mensuelle?: number | null;
+  /** Remise appliquée au moment de l'envoi (%) et son libellé. */
+  remise_percent?: number | null;
+  remise_label?: string | null;
 
   // ── Champs hérités de la v1 (anciennes demandes) ───────────────
+  /** Ancien champ mono-valeur ; remplacé par `types_site`. */
+  type_site?: string | null;
+  /** Ancien champ mono-valeur ; remplacé par `objectifs`. */
+  objectif?: string | null;
   nombre_pages?: string | null;
   nom_domaine?: string | null;
   hebergement?: string | null;
