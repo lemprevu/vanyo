@@ -98,7 +98,28 @@ export default async function DashboardPage() {
           <h2 className="font-semibold text-white">Dernières demandes</h2>
           <Link href="/admin/devis" className="text-sm text-vanyo-200 hover:text-white">Tout voir</Link>
         </div>
-        <div className="overflow-x-auto">
+        {/* Mobile : liste empilée plutôt qu'un tableau de cinq colonnes. */}
+        <ul className="divide-y divide-white/5 border-t border-white/8 lg:hidden">
+          {recent.map((d) => (
+            <li key={d.id} className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="truncate font-medium text-white">{d.prenom} {d.nom}</div>
+                  <div className="truncate text-xs text-white/40">{d.entreprise || d.type_site || "—"}</div>
+                </div>
+                <span className={`shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[(d.status as DevisStatus) ?? "Nouveau"]}`}>
+                  {d.status}
+                </span>
+              </div>
+              <div className="mt-2 flex items-center justify-between gap-3 text-xs text-white/45">
+                <span>{d.budget || "Budget non précisé"}</span>
+                <span>{d.created_at ? new Date(d.created_at).toLocaleDateString("fr-FR") : "—"}</span>
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        <div className="hidden overflow-x-auto lg:block">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-y border-white/8 text-left text-xs uppercase tracking-wide text-white/40">

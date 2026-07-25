@@ -40,7 +40,9 @@ export default async function ContactPage() {
         subtitle="Une question, une idée, un devis ? Écrivez-nous, on adore les nouveaux projets."
       />
 
-      <section className="container-v grid gap-8 py-8 pb-20 lg:grid-cols-[1fr_1.1fr]">
+      {/* overflow-x-clip : les deux colonnes entrent en scène par la gauche et
+          par la droite ; sans cela elles élargissent la page sur mobile. */}
+      <section className="container-v grid gap-8 overflow-x-clip py-8 pb-20 lg:grid-cols-[1fr_1.1fr]">
         {/* Infos */}
         <Reveal direction="right">
           <div className="grid gap-4">

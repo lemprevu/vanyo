@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Clock, ShieldCheck, Gift } from "lucide-react";
 import { PageHeader } from "@/components/sections/PageHeader";
 import { DevisForm } from "./DevisForm";
@@ -45,7 +46,14 @@ export default async function DevisPage() {
         </div>
 
         <div className="mx-auto max-w-3xl">
-          <DevisForm turnstileKey={settings.turnstile_site_key} />
+          {/* Le formulaire lit ?promo=… : Suspense requis pour garder la page statique. */}
+          <Suspense
+            fallback={
+              <div className="gradient-border h-[520px] animate-pulse rounded-3xl bg-ink-card/60" />
+            }
+          >
+            <DevisForm turnstileKey={settings.turnstile_site_key} />
+          </Suspense>
         </div>
       </section>
     </>

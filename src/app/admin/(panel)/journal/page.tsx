@@ -57,7 +57,35 @@ export default async function JournalPage() {
         </p>
       </div>
 
-      <div className="gradient-border overflow-hidden rounded-2xl bg-ink-card/60">
+      {/* Mobile : liste empilée — cinq colonnes ne tiennent pas sur un téléphone. */}
+      <ul className="gradient-border divide-y divide-white/5 overflow-hidden rounded-2xl bg-ink-card/60 lg:hidden">
+        {rows.map((r) => (
+          <li key={r.id} className="p-4">
+            <div className="flex items-center justify-between gap-3">
+              <span className="rounded-full border border-vanyo-500/30 bg-vanyo-500/10 px-2.5 py-0.5 text-xs font-medium text-vanyo-200">
+                {ACTION_LABELS[r.action] ?? r.action}
+              </span>
+              <span className="shrink-0 text-xs text-white/45">
+                {new Date(r.created_at).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+              </span>
+            </div>
+            {r.resource_label && <p className="mt-2 text-sm leading-snug text-white/70">{r.resource_label}</p>}
+            <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-xs text-white/40">
+              <span className="font-medium text-white/60">{r.email ?? "—"}</span>
+              <span className="font-mono">{r.ip ?? "—"}</span>
+            </p>
+          </li>
+        ))}
+        {rows.length === 0 && (
+          <li className="flex flex-col items-center gap-2 py-16 text-center text-sm text-white/40">
+            <ScrollText className="h-6 w-6 text-white/25" />
+            Aucune activité enregistrée pour l&apos;instant.
+          </li>
+        )}
+      </ul>
+
+      {/* Desktop : tableau complet */}
+      <div className="gradient-border hidden overflow-hidden rounded-2xl bg-ink-card/60 lg:block">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
             <thead>

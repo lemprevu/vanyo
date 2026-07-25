@@ -4,6 +4,8 @@
  *  ces données servent de contenu par défaut / de secours.)
  */
 
+import { PACKS, packHighlights } from "@/lib/catalog";
+
 export type Stat = { label: string; value: number; suffix?: string; decimals?: number };
 
 export const STATS: Stat[] = [
@@ -109,69 +111,22 @@ export type Plan = {
   features: string[];
 };
 
-export const PLANS: Plan[] = [
-  {
-    name: "Starter",
-    price: "500€",
-    originalPrice: "720€",
-    priceNote: "à partir de",
-    description: "Idéal pour lancer une présence en ligne soignée.",
-    features: [
-      "Site vitrine 1 à 3 pages",
-      "Design sur mesure",
-      "100% responsive",
-      "Formulaire de contact",
-      "SEO de base",
-      "Mise en ligne incluse",
-    ],
-  },
-  {
-    name: "Business",
-    price: "1 200€",
-    originalPrice: "1 750€",
-    priceNote: "à partir de",
-    highlight: true,
-    description: "Le choix des entreprises qui veulent convertir.",
-    features: [
-      "Site 5 à 8 pages",
-      "Design premium & animations",
-      "SEO avancé",
-      "Blog / actualités",
-      "Panel administrateur",
-      "Nom de domaine + emails pro",
-      "Support 3 mois",
-    ],
-  },
-  {
-    name: "Premium",
-    price: "2 500€",
-    originalPrice: "3 600€",
-    priceNote: "à partir de",
-    description: "Pour un projet ambitieux et évolutif.",
-    features: [
-      "Site sur mesure illimité",
-      "E-commerce ou espace client",
-      "Animations avancées",
-      "SEO complet + suivi",
-      "Panel admin complet",
-      "Hébergement premium 1 an",
-      "Support prioritaire 12 mois",
-    ],
-  },
-  {
-    name: "Sur Mesure",
-    price: "Sur devis",
-    priceNote: "",
-    description: "Application web, plateforme ou besoin spécifique.",
-    features: [
-      "Cahier des charges dédié",
-      "Fonctionnalités avancées",
-      "Intégrations & API",
-      "Équipe dédiée",
-      "Accompagnement long terme",
-    ],
-  },
-];
+/**
+ * Les formules affichées sont dérivées du catalogue commercial : le tableau
+ * comparatif de /tarifs et le formulaire de devis lisent exactement les mêmes
+ * données, ils ne peuvent donc pas se contredire.
+ * (Ces valeurs servent de contenu par défaut ; la table `plans` de Supabase
+ *  reste modifiable depuis le panel admin si vous voulez ajuster un prix.)
+ */
+export const PLANS: Plan[] = PACKS.map((p) => ({
+  name: p.name,
+  price: p.base === null ? "Sur devis" : `${p.base.toLocaleString("fr-FR")}€`,
+  originalPrice: p.originalPrice ? `${p.originalPrice.toLocaleString("fr-FR")}€` : null,
+  priceNote: p.base === null ? "" : "à partir de",
+  highlight: p.highlight,
+  description: p.tagline,
+  features: packHighlights(p),
+}));
 
 export type Testimonial = {
   name: string;

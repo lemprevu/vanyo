@@ -5,7 +5,8 @@ import { SettingsTabs } from "@/app/admin/(panel)/parametres/SettingsTabs";
 import { ArticlesManager } from "@/app/admin/(panel)/blog/ArticlesManager";
 import { UsersManager } from "@/app/admin/(panel)/utilisateurs/UsersManager";
 import { SignatureBuilder } from "@/app/admin/(panel)/signature/SignatureBuilder";
-import type { Avis, Article, AdminProfile } from "@/lib/types";
+import { PromoManager } from "@/app/admin/(panel)/codes-promo/PromoManager";
+import type { Avis, Article, AdminProfile, PromoCode } from "@/lib/types";
 import { useBiz } from "@/lib/demo/BizProvider";
 import type { Row, Section } from "@/lib/demo/types";
 import type { RequestsSection } from "@/lib/demo/types";
@@ -70,6 +71,15 @@ export function SectionRenderer({ section }: { section: Section }) {
       <UsersManager
         initial={rows as unknown as AdminProfile[]}
         currentUserId={String(rows[0]?.id ?? "demo-owner")}
+        live={false}
+        onChange={(r) => setCollection(section.id, r as unknown as Row[])}
+      />
+    );
+  }
+  if (section.type === "promos") {
+    return (
+      <PromoManager
+        initial={rows as unknown as PromoCode[]}
         live={false}
         onChange={(r) => setCollection(section.id, r as unknown as Row[])}
       />

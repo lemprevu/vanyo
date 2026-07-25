@@ -107,7 +107,7 @@ export function PlansManager({ initial, live, onChange }: { initial: Plan[]; liv
             <motion.aside
               initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
               transition={{ type: "spring", stiffness: 300, damping: 32 }}
-              className="fixed inset-y-0 right-0 z-50 w-full max-w-md overflow-y-auto border-l border-white/10 bg-ink-soft p-6"
+              className="fixed inset-y-0 right-0 z-50 w-full max-w-md overflow-y-auto overscroll-contain border-l border-white/10 bg-ink-soft p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:p-6"
             >
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-white">{editing ? "Modifier le pack" : "Nouveau pack"}</h2>

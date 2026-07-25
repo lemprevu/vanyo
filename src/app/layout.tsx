@@ -75,9 +75,17 @@ export default async function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const settings = await getSiteSettings();
   return (
-    <html lang="fr" className={`${geist.variable} h-full`}>
+    // Pas de `h-full` sur <html> : une hauteur fixe de 100 % sur la racine
+    // empêche le défilement programmatique du document (window.scrollTo,
+    // scrollIntoView, ancres #…) — le contenu déborde visuellement et se fait
+    // bien faire défiler au doigt, mais plus aucun script ne peut remonter la
+    // page. C'est ce qui faisait rester le formulaire de devis au milieu de
+    // l'étape suivante sur mobile. `min-h-dvh` sur <body> donne le même rendu
+    // (pied de page collé en bas) sans casser le défilement, et suit la barre
+    // d'adresse mobile qui se rétracte.
+    <html lang="fr" className={geist.variable}>
       <body
-        className="min-h-full flex flex-col font-sans"
+        className="flex min-h-dvh flex-col font-sans"
         style={{ fontFamily: "var(--font-geist-sans)" }}
       >
         <JsonLd data={organizationSchema(settings)} />

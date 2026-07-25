@@ -82,13 +82,14 @@ export function SettingsTabs({ initial, live, onChange }: { initial: SiteSetting
 
   return (
     <div className="space-y-5">
-      {/* Onglets */}
-      <div className="flex flex-wrap gap-1.5 rounded-2xl border border-white/8 bg-ink-card/60 p-1.5">
+      {/* Onglets — bande défilante sur mobile, plutôt qu'un pavé d'onglets
+          empilés sur trois lignes. */}
+      <div className="flex gap-1.5 overflow-x-auto rounded-2xl border border-white/8 bg-ink-card/60 p-1.5 [scrollbar-width:none] lg:flex-wrap lg:overflow-visible [&::-webkit-scrollbar]:hidden">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`relative flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-medium transition-colors ${
+            className={`relative flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-3.5 py-2 text-sm font-medium transition-colors ${
               tab === t.key ? "text-white" : "text-white/55 hover:text-white"
             }`}
           >

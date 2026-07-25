@@ -104,6 +104,15 @@ export type UsersSection = {
   seed: Row[];
 };
 
+/** Section « codes promo » (réutilise le gestionnaire de codes existant). */
+export type PromosSection = {
+  type: "promos";
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  seed: Row[];
+};
+
 /** Section « signature email » (générateur, pas de données propres). */
 export type SignatureSection = {
   type: "signature";
@@ -145,7 +154,7 @@ export type PlanningSection = {
 
 export type Section =
   | CollectionSection | RequestsSection | ReviewsSection | MessagesSection | SettingsSection | PlanningSection
-  | BlogSection | UsersSection | SignatureSection | PerformanceSection | JournalSection;
+  | BlogSection | UsersSection | SignatureSection | PerformanceSection | JournalSection | PromosSection;
 
 /** Configuration complète d'un métier. */
 export type MetierConfig = {

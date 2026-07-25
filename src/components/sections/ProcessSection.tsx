@@ -25,7 +25,12 @@ export function ProcessSection() {
           style={{ bottom: "2rem" }}
         />
 
-        <div className="space-y-8">
+        {/* overflow-x-clip : les étapes entrent en scène par un décalage
+            horizontal de 30 px ; sans cela elles élargissent la page tant
+            qu'elles ne sont pas animées (défilement latéral parasite sur
+            mobile). `clip` plutôt que `hidden` pour ne pas créer de conteneur
+            de défilement et laisser les halos déborder verticalement. */}
+        <div className="space-y-8 overflow-x-clip">
           {PROCESS.map((p, i) => (
             <motion.div
               key={p.step}

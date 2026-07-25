@@ -6,10 +6,14 @@ import {
   Search, Eye, Trash2, X, Mail, Phone, MapPin, Building2,
   Calendar, Euro, Printer, Save, Wand2,
 } from "lucide-react";
-import { DEVIS_STATUSES, STATUS_STYLES, type Devis, type DevisStatus } from "@/lib/devis";
+import {
+  DEVIS_STATUSES, STATUS_STYLES, type Devis, type DevisStatus,
+  PACKS_BY_KEY, MODULES_BY_KEY, DEPLOIEMENTS_BY_KEY,
+  MAINTENANCE_PLANS_BY_KEY, MAINTENANCE_OPTIONS_BY_KEY, DELAIS_BY_KEY,
+} from "@/lib/devis";
 import { createClient } from "@/lib/supabase/client";
-import { suggestQuote } from "@/lib/quote";
-import { DevisMockupPreview } from "@/components/demo/DevisMockupPreview";
+import { suggestQuote, selectionFromDevis } from "@/lib/quote";
+import { VisionPreview } from "@/components/devis/VisionPreview";
 
 export function DevisManager({ initial, live, onChange }: { initial: Devis[]; live: boolean; onChange?: (rows: Devis[]) => void }) {
   const [rows, setRows] = useState<Devis[]>(initial);
@@ -38,6 +42,22 @@ export function DevisManager({ initial, live, onChange }: { initial: Devis[]; li
   }, [rows, query, filter]);
 
   const quote = useMemo(() => (selected ? suggestQuote(selected) : null), [selected]);
+
+  // Aperçu « vision du client », régénéré à partir des réponses enregistrées.
+  const vision = useMemo(() => {
+    if (!selected) return null;
+    const sel = selectionFromDevis(selected);
+    const pack = sel.pack ? PACKS_BY_KEY[sel.pack] : undefined;
+    return {
+      siteName: selected.entreprise || `${selected.prenom} ${selected.nom}`.trim(),
+      typeSite: selected.type_site,
+      objectif: selected.objectif,
+      styleVisuel: selected.style_visuel,
+      couleurs: selected.couleurs_souhaitees,
+      pages: sel.pages,
+      modules: [...(sel.modules ?? []), ...(pack?.includes ?? [])],
+    };
+  }, [selected]);
 
   const counts = useMemo(() => {
     const map: Record<string, number> = { Tous: rows.length };
@@ -104,13 +124,14 @@ export function DevisManager({ initial, live, onChange }: { initial: Devis[]; li
         </div>
       </div>
 
-      {/* Filtres par statut */}
-      <div className="flex flex-wrap gap-2">
+      {/* Filtres par statut — bande défilante sur mobile, plutôt qu'un pavé
+          de pastilles sur quatre lignes. */}
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden">
         {(["Tous", ...DEVIS_STATUSES] as const).map((s) => (
           <button
             key={s}
             onClick={() => setFilter(s)}
-            className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+            className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-2 text-sm font-medium transition-colors ${
               filter === s ? "bg-vanyo-500 text-white" : "border border-white/10 text-white/55 hover:text-white"
             }`}
           >
@@ -119,8 +140,72 @@ export function DevisManager({ initial, live, onChange }: { initial: Devis[]; li
         ))}
       </div>
 
-      {/* Table */}
-      <div className="gradient-border overflow-hidden rounded-2xl bg-ink-card/60">
+      {/* Mobile : une carte par demande, pour éviter un tableau à faire
+          défiler horizontalement sur téléphone. */}
+      <div className="space-y-2.5 lg:hidden">
+        {filtered.map((d) => (
+          <div key={d.id} className="gradient-border rounded-2xl bg-ink-card/60 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <button onClick={() => openDetail(d)} className="min-w-0 flex-1 text-left">
+                <div className="truncate font-medium text-white">{d.prenom} {d.nom}</div>
+                <div className="truncate text-xs text-white/40">{d.email}</div>
+              </button>
+              {!d.viewed && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-vanyo-400" />}
+            </div>
+
+            <dl className="mt-3 space-y-1 text-sm">
+              <div className="flex justify-between gap-3">
+                <dt className="shrink-0 text-white/45">Type</dt>
+                <dd className="min-w-0 truncate text-right text-white/75">{d.type_site || "—"}</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="shrink-0 text-white/45">Estimation</dt>
+                <dd className="min-w-0 truncate text-right text-white/75">
+                  {d.estimation != null ? `${d.estimation.toLocaleString("fr-FR")} €` : (d.budget || "—")}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="shrink-0 text-white/45">Reçu le</dt>
+                <dd className="text-right text-white/75">{new Date(d.created_at).toLocaleDateString("fr-FR")}</dd>
+              </div>
+            </dl>
+
+            <div className="mt-3 flex items-center gap-2">
+              <select
+                value={d.status}
+                onChange={(e) => updateStatus(d.id, e.target.value as DevisStatus)}
+                className={`min-w-0 flex-1 rounded-full border bg-transparent px-3 py-2 text-xs font-medium outline-none ${STATUS_STYLES[d.status]}`}
+              >
+                {DEVIS_STATUSES.map((s) => (
+                  <option key={s} value={s} className="bg-ink-card text-white">{s}</option>
+                ))}
+              </select>
+              <button
+                onClick={() => openDetail(d)}
+                aria-label="Voir le détail"
+                className="glass flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white/70"
+              >
+                <Eye className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => remove(d.id)}
+                aria-label="Supprimer"
+                className="glass flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white/70"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+        {filtered.length === 0 && (
+          <p className="gradient-border rounded-2xl bg-ink-card/60 py-12 text-center text-sm text-white/40">
+            Aucune demande ne correspond.
+          </p>
+        )}
+      </div>
+
+      {/* Desktop : tableau complet */}
+      <div className="gradient-border hidden overflow-hidden rounded-2xl bg-ink-card/60 lg:block">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-sm">
             <thead>
@@ -188,7 +273,7 @@ export function DevisManager({ initial, live, onChange }: { initial: Devis[]; li
             <motion.aside
               initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
               transition={{ type: "spring", stiffness: 300, damping: 32 }}
-              className="fixed inset-y-0 right-0 z-50 w-full max-w-md overflow-y-auto border-l border-white/10 bg-ink-soft p-6"
+              className="fixed inset-y-0 right-0 z-50 w-full max-w-md overflow-y-auto overscroll-contain border-l border-white/10 bg-ink-soft p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:p-6"
             >
               <div className="flex items-start justify-between">
                 <div>
@@ -208,33 +293,121 @@ export function DevisManager({ initial, live, onChange }: { initial: Devis[]; li
               <div className="mt-6 space-y-4">
                 {quote && (
                   <Section title="Estimation & aperçu générés">
-                    <div className="flex items-baseline justify-between">
+                    <div className="flex items-baseline justify-between gap-3">
                       <span className="flex items-center gap-1.5 text-sm text-white/60">
                         <Wand2 className="h-4 w-4 text-vanyo-400" /> Prix suggéré
                       </span>
-                      <span className="text-2xl font-bold text-white">{quote.total.toLocaleString("fr-FR")} €</span>
+                      <span className="text-right">
+                        <span className="block text-2xl font-bold leading-tight text-white">
+                          {quote.surDevis ? "Sur devis" : `${quote.total.toLocaleString("fr-FR")} €`}
+                        </span>
+                        {quote.monthly > 0 && (
+                          <span className="block text-xs text-white/55">
+                            puis {quote.monthly.toLocaleString("fr-FR")} €/mois
+                          </span>
+                        )}
+                      </span>
                     </div>
-                    <div className="space-y-1 border-t border-white/8 pt-2 text-xs">
-                      {quote.lines.map((l) => (
-                        <div key={l.label} className="flex justify-between text-white/50">
-                          <span>{l.label}</span>
-                          <span>+{l.amount} €</span>
-                        </div>
-                      ))}
-                    </div>
+
+                    {selected.estimation != null && selected.estimation !== quote.total && (
+                      <p className="rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-xs text-sky-200">
+                        Montant affiché au client lors de l&apos;envoi :{" "}
+                        {selected.estimation.toLocaleString("fr-FR")} €. Le tarif ayant changé depuis, honorez
+                        de préférence le montant annoncé.
+                      </p>
+                    )}
+
+                    {quote.lines.length > 0 && (
+                      <div className="space-y-1 border-t border-white/8 pt-2 text-xs">
+                        {quote.lines.map((l, i) => (
+                          <div key={`${l.label}-${i}`} className="flex justify-between gap-3 text-white/50">
+                            <span className="min-w-0">{l.label}</span>
+                            <span className="shrink-0">+{l.amount.toLocaleString("fr-FR")} €</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {quote.monthlyLines.length > 0 && (
+                      <div className="space-y-1 border-t border-white/8 pt-2 text-xs">
+                        {quote.monthlyLines.map((l, i) => (
+                          <div key={`${l.label}-${i}`} className="flex justify-between gap-3 text-white/50">
+                            <span className="min-w-0">{l.label}</span>
+                            <span className="shrink-0">+{l.amount} €/mois</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {quote.packSuggested && (
+                      <p className="rounded-lg border border-vanyo-500/30 bg-vanyo-500/10 px-3 py-2 text-xs text-vanyo-200">
+                        Le client n&apos;a pas choisi de formule — calcul basé sur la formule{" "}
+                        {PACKS_BY_KEY[quote.packKey]?.name}, la plus adaptée à ses réponses.
+                      </p>
+                    )}
+
                     {quote.belowClientBudget && (
                       <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
                         Le budget annoncé ({selected.budget}) est nettement en dessous de l&apos;estimation — à
                         clarifier avec le client (réduire le périmètre ou ajuster le budget).
                       </p>
                     )}
-                    <div className="pt-2">
-                      <DevisMockupPreview devis={selected} />
-                    </div>
+
+                    {vision && (
+                      <div className="pt-2">
+                        <VisionPreview vision={vision} />
+                      </div>
+                    )}
+
                     <p className="text-[11px] text-white/35">
                       Estimation automatique à partir des réponses du formulaire — un point de départ pour
                       l&apos;échange, pas un prix à annoncer tel quel.
                     </p>
+                  </Section>
+                )}
+
+                {(selected.formule || selected.modules?.length || selected.deploiement || selected.maintenance) && (
+                  <Section title="Configuration choisie">
+                    <Field
+                      label="Formule"
+                      value={selected.formule ? (PACKS_BY_KEY[selected.formule]?.name ?? "À conseiller") : null}
+                    />
+                    <Field label="Pages" value={selected.pages_total ? String(selected.pages_total) : null} />
+                    <Field
+                      label="Mise en ligne"
+                      value={selected.deploiement ? (DEPLOIEMENTS_BY_KEY[selected.deploiement]?.label ?? null) : null}
+                    />
+                    <Field label="Délai" value={selected.delai ? (DELAIS_BY_KEY[selected.delai]?.label ?? null) : null} />
+                    <Field
+                      label="Maintenance"
+                      value={selected.maintenance ? (MAINTENANCE_PLANS_BY_KEY[selected.maintenance]?.label ?? null) : null}
+                    />
+
+                    {selected.modules && selected.modules.length > 0 && (
+                      <div className="pt-1">
+                        <span className="text-xs text-white/45">Modules demandés</span>
+                        <div className="mt-1.5 flex flex-wrap gap-1.5">
+                          {selected.modules.map((m) => (
+                            <span key={m} className="rounded-md bg-vanyo-500/12 px-2 py-1 text-xs text-vanyo-200">
+                              {MODULES_BY_KEY[m]?.label ?? m}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {selected.maintenance_options && selected.maintenance_options.length > 0 && (
+                      <div className="pt-1">
+                        <span className="text-xs text-white/45">Suppléments mensuels</span>
+                        <div className="mt-1.5 flex flex-wrap gap-1.5">
+                          {selected.maintenance_options.map((o) => (
+                            <span key={o} className="rounded-md bg-emerald-500/15 px-2 py-1 text-xs text-emerald-300">
+                              {MAINTENANCE_OPTIONS_BY_KEY[o]?.label ?? o}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </Section>
                 )}
 
@@ -256,12 +429,14 @@ export function DevisManager({ initial, live, onChange }: { initial: Devis[]; li
                   {selected.lien_actuel && <Field label="Lien actuel" value={selected.lien_actuel} />}
                 </Section>
 
-                <Section title="Technique">
-                  <Field label="Nom de domaine" value={selected.nom_domaine} />
-                  <Field label="Hébergement" value={selected.hebergement} />
-                  <Field label="Logo" value={selected.logo} />
-                  <Field label="Charte graphique" value={selected.charte_graphique} />
-                </Section>
+                {(selected.nom_domaine || selected.hebergement || selected.logo || selected.charte_graphique) && (
+                  <Section title="Identité & technique">
+                    <Field label="Nom de domaine" value={selected.nom_domaine} />
+                    <Field label="Hébergement" value={selected.hebergement} />
+                    <Field label="Logo" value={selected.logo} />
+                    <Field label="Charte graphique" value={selected.charte_graphique} />
+                  </Section>
+                )}
 
                 {selected.fonctionnalites && selected.fonctionnalites.length > 0 && (
                   <Section title="Fonctionnalités">

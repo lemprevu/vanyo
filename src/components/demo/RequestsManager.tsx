@@ -93,12 +93,13 @@ export function RequestsManager({
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      {/* Bande défilante sur mobile plutôt qu'un pavé de pastilles. */}
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden">
         {(["Tous", ...section.statuses] as string[]).map((s) => (
           <button
             key={s}
             onClick={() => setFilter(s)}
-            className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+            className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-2 text-sm font-medium transition-colors ${
               filter === s ? "bg-vanyo-500 text-white" : "border border-white/10 text-white/55 hover:text-white"
             }`}
           >
@@ -107,7 +108,64 @@ export function RequestsManager({
         ))}
       </div>
 
-      <div className="gradient-border overflow-hidden rounded-2xl bg-ink-card/60">
+      {/* Mobile : une carte par demande — pas de tableau à faire défiler
+          horizontalement sur un écran de téléphone. */}
+      <div className="space-y-2.5 lg:hidden">
+        {filtered.map((d) => (
+          <div key={d.id} className="gradient-border rounded-2xl bg-ink-card/60 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <button onClick={() => openDetail(d)} className="min-w-0 flex-1 text-left">
+                <div className="truncate font-medium text-white">{String(d[section.nameField] ?? "—")}</div>
+                {d.email ? <div className="truncate text-xs text-white/40">{email(d)}</div> : null}
+              </button>
+              {!d.viewed && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-vanyo-400" />}
+            </div>
+
+            {colFields.length > 0 && (
+              <dl className="mt-3 space-y-1 text-sm">
+                {colFields.map((f) => (
+                  <div key={f!.key} className="flex justify-between gap-3">
+                    <dt className="shrink-0 text-white/45">{f!.label}</dt>
+                    <dd className="min-w-0 truncate text-right text-white/75">{displayValue(f!, d)}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+
+            <div className="mt-3 flex items-center gap-2">
+              <select
+                value={String(d.status ?? section.statuses[0])}
+                onChange={(e) => updateStatus(d.id, e.target.value)}
+                className={`min-w-0 flex-1 rounded-full border bg-transparent px-3 py-2 text-xs font-medium outline-none ${statusColor(String(d.status ?? ""))}`}
+              >
+                {section.statuses.map((s) => <option key={s} value={s} className="bg-ink-card text-white">{s}</option>)}
+              </select>
+              <button
+                onClick={() => openDetail(d)}
+                aria-label="Voir le détail"
+                className="glass flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white/70"
+              >
+                <Eye className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => remove(d.id)}
+                aria-label="Supprimer"
+                className="glass flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white/70"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+        {filtered.length === 0 && (
+          <p className="gradient-border rounded-2xl bg-ink-card/60 py-12 text-center text-sm text-white/40">
+            Aucune demande ne correspond.
+          </p>
+        )}
+      </div>
+
+      {/* Desktop : tableau complet */}
+      <div className="gradient-border hidden overflow-hidden rounded-2xl bg-ink-card/60 lg:block">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
@@ -158,7 +216,7 @@ export function RequestsManager({
             <motion.aside
               initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
               transition={{ type: "spring", stiffness: 300, damping: 32 }}
-              className="fixed inset-y-0 right-0 z-50 w-full max-w-md overflow-y-auto border-l border-white/10 bg-ink-soft p-6"
+              className="fixed inset-y-0 right-0 z-50 w-full max-w-md overflow-y-auto overscroll-contain border-l border-white/10 bg-ink-soft p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:p-6"
             >
               <div className="flex items-start justify-between">
                 <div>

@@ -1,5 +1,10 @@
 /** Options et types partagés du formulaire de devis + panel admin. */
 
+// Le catalogue commercial (formules, modules, mise en ligne, maintenance) vit
+// dans `catalog.ts` : c'est la source unique de vérité des prix. On le
+// ré-exporte ici pour que les composants n'aient qu'un seul import à faire.
+export * from "@/lib/catalog";
+
 export const SITE_TYPES = [
   "Site vitrine",
   "E-commerce",
@@ -12,25 +17,8 @@ export const SITE_TYPES = [
   "Autre",
 ] as const;
 
-export const FEATURES = [
-  "Connexion",
-  "Paiement",
-  "Blog",
-  "Galerie",
-  "Contact",
-  "Agenda",
-  "Réservation",
-  "Espace Client",
-  "Dashboard",
-  "Newsletter",
-  "Chat",
-  "Multilingue",
-  "Animations",
-  "SEO",
-  "Autre",
-] as const;
-
 export const BUDGETS = [
+  "Je ne sais pas encore",
   "< 500€",
   "500 - 1000€",
   "1000 - 2000€",
@@ -48,7 +36,7 @@ export const OBJECTIFS = [
   "Autre",
 ] as const;
 
-/** Style visuel recherché. */
+/** Style visuel recherché — les valeurs pilotent aussi l'aperçu généré. */
 export const STYLES_VISUELS = [
   "Moderne & épuré",
   "Luxe & premium",
@@ -58,6 +46,20 @@ export const STYLES_VISUELS = [
   "Minimaliste",
 ] as const;
 
+/** Palette proposée en un clic à l'étape « Style ». */
+export const COULEURS_PRESETS = [
+  { label: "Violet", value: "#6D4AFF" },
+  { label: "Bleu nuit", value: "#1E3A8A" },
+  { label: "Bleu ciel", value: "#38BDF8" },
+  { label: "Émeraude", value: "#059669" },
+  { label: "Doré", value: "#C9A227" },
+  { label: "Bordeaux", value: "#7F1D1D" },
+  { label: "Orange", value: "#EA580C" },
+  { label: "Rose", value: "#EC4899" },
+  { label: "Turquoise", value: "#14B8A6" },
+  { label: "Anthracite", value: "#1F2937" },
+] as const;
+
 /** D'où vient le contenu (textes/images). */
 export const CONTENU_TYPES = [
   "Je fournis tout (textes + images)",
@@ -65,14 +67,7 @@ export const CONTENU_TYPES = [
   "Je veux que vous rédigiez tout",
 ] as const;
 
-/** Options payantes supplémentaires proposées à l'étape dédiée. */
-export const OPTIONS_SUP = [
-  { key: "Page supplémentaire", price: "À partir de 50 €", counter: true },
-  { key: "Livraison prioritaire (72 h)", price: "+100 €" },
-  { key: "Maintenance mensuelle", price: "À partir de 19 €/mois" },
-  { key: "Création de logo", price: "Sur devis" },
-  { key: "Rédaction de contenu", price: "Sur devis" },
-] as const;
+export const PHOTOS_STATES = ["Oui, de qualité", "Quelques-unes", "Non, aucune"] as const;
 
 export const TRISTATE = ["Oui", "Non", "Je veux que vous vous en occupiez"] as const;
 export const LOGO_STATE = ["Oui", "Non", "À créer"] as const;
@@ -116,21 +111,18 @@ export type Devis = {
   code_postal?: string | null;
   pays?: string | null;
   type_site?: string | null;
-  nombre_pages?: string | null;
   site_existant?: string | null;
   lien_actuel?: string | null;
-  nom_domaine?: string | null;
-  hebergement?: string | null;
   logo?: string | null;
   charte_graphique?: string | null;
-  fonctionnalites?: string[] | null;
   budget?: string | null;
   date_souhaitee?: string | null;
   description?: string | null;
   note_interne?: string | null;
   rgpd: boolean;
   viewed?: boolean;
-  // Questionnaire "Style & contenu"
+
+  // ── Questionnaire « Style & contenu » ──────────────────────────
   objectif?: string | null;
   style_visuel?: string | null;
   ambiance?: string | null;
@@ -141,7 +133,32 @@ export type Devis = {
   contenu_type?: string | null;
   langues?: string | null;
   a_des_photos?: string | null;
-  // Options payantes supplémentaires
+
+  // ── Configuration chiffrée (formulaire v2) ─────────────────────
+  /** Clé de formule choisie : starter | business | premium | surmesure. */
+  formule?: string | null;
+  /** Nombre total de pages souhaité. */
+  pages_total?: number | null;
+  /** Clés de modules retenus (voir catalog.MODULES). */
+  modules?: string[] | null;
+  /** Clé d'option de mise en ligne (voir catalog.DEPLOIEMENTS). */
+  deploiement?: string | null;
+  /** Clé de formule de maintenance (voir catalog.MAINTENANCE_PLANS). */
+  maintenance?: string | null;
+  /** Suppléments mensuels retenus. */
+  maintenance_options?: string[] | null;
+  /** Clé de délai (standard | prioritaire). */
+  delai?: string | null;
+  /** Estimation ponctuelle affichée au client au moment de l'envoi. */
+  estimation?: number | null;
+  /** Estimation mensuelle affichée au client au moment de l'envoi. */
+  estimation_mensuelle?: number | null;
+
+  // ── Champs hérités de la v1 (anciennes demandes) ───────────────
+  nombre_pages?: string | null;
+  nom_domaine?: string | null;
+  hebergement?: string | null;
+  fonctionnalites?: string[] | null;
   options?: string[] | null;
   pages_supplementaires?: number | null;
 };

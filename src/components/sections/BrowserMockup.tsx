@@ -15,8 +15,9 @@ import { motion } from "motion/react";
 export function BrowserMockup() {
   return (
     <div style={{ transformStyle: "preserve-3d", perspective: 1200 }} className="relative">
-      {/* Halo */}
-      <div className="pointer-events-none absolute -inset-10 -z-10 rounded-full bg-vanyo-500/20 blur-[90px]" />
+      {/* Halo — resserré sur mobile : un débordement de 40 px de chaque côté
+          élargit la page sur un écran de 375 px. */}
+      <div className="pointer-events-none absolute -inset-y-6 inset-x-0 -z-10 rounded-full bg-vanyo-500/20 blur-[90px] sm:-inset-10" />
 
       <div className="animate-float gradient-border overflow-hidden rounded-2xl bg-ink-card/90 shadow-2xl shadow-vanyo-900/40">
         {/* Barre du navigateur */}

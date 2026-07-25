@@ -17,7 +17,8 @@ export function DemoDashboard() {
 
   // KPIs : nombre d'éléments par section (hors réglages), 4 max.
   const kpis = config.sections
-    .filter((s) => s.type !== "settings" && s.type !== "planning")
+    // Seules les sections qui portent réellement des données ont un compteur.
+    .filter((s) => !["settings", "planning", "signature", "performance", "journal"].includes(s.type))
     .slice(0, 4)
     .map((s, i) => ({
       label: s.label,
@@ -76,23 +77,31 @@ export function DemoDashboard() {
             <h2 className="font-semibold text-white">Dernières {reqSection.label.toLowerCase()}</h2>
             <Link href={`${base}/${reqSection.id}`} className="text-sm text-vanyo-200 hover:text-white">Tout voir</Link>
           </div>
+          {/* Trois colonnes courtes : elles tiennent sur un téléphone sans
+              défilement horizontal, à condition de resserrer les marges. */}
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[560px] text-sm">
+            <table className="w-full text-sm">
               <thead>
-                <tr className="border-y border-white/8 text-left text-xs uppercase tracking-wide text-white/40">
-                  <th className="px-5 py-3 font-medium">{reqSection.fields.find((f) => f.key === reqSection.nameField)?.label ?? "Client"}</th>
-                  <th className="px-5 py-3 font-medium">Statut</th>
-                  <th className="px-5 py-3 font-medium">Date</th>
+                <tr className="border-y border-white/8 text-left text-[11px] uppercase tracking-wide text-white/40 sm:text-xs">
+                  <th className="px-3 py-3 font-medium sm:px-5">{reqSection.fields.find((f) => f.key === reqSection.nameField)?.label ?? "Client"}</th>
+                  <th className="px-3 py-3 font-medium sm:px-5">Statut</th>
+                  <th className="px-3 py-3 text-right font-medium sm:px-5 sm:text-left">Date</th>
                 </tr>
               </thead>
               <tbody>
                 {recent.map((d) => (
                   <tr key={d.id} className="border-b border-white/5">
-                    <td className="px-5 py-3 font-medium text-white">{String(d[reqSection.nameField] ?? "—")}</td>
-                    <td className="px-5 py-3">
-                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor(String(d.status ?? ""))}`}>{String(d.status ?? "")}</span>
+                    <td className="max-w-[130px] truncate px-3 py-3 font-medium text-white sm:max-w-none sm:px-5">
+                      {String(d[reqSection.nameField] ?? "—")}
                     </td>
-                    <td className="px-5 py-3 text-white/50">{d.created_at ? new Date(String(d.created_at)).toLocaleDateString("fr-FR") : "—"}</td>
+                    <td className="px-3 py-3 sm:px-5">
+                      <span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium sm:px-2.5 sm:text-xs ${statusColor(String(d.status ?? ""))}`}>
+                        {String(d.status ?? "")}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-3 text-right text-white/50 sm:px-5 sm:text-left">
+                      {d.created_at ? new Date(String(d.created_at)).toLocaleDateString("fr-FR") : "—"}
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -18,8 +18,42 @@ const H = 3600_000, D = 24 * H;
 
 const ADMIN_UID = "u0";
 
+/**
+ * Galerie photos générique — proposée aux métiers qui n'ont pas déjà leur
+ * propre collection visuelle (carte, portfolio, réalisations…).
+ */
+const galerieSection = (legendes: string[]): Section => ({
+  type: "collection", id: "galerie", label: "Galerie photos", icon: ImageIcon,
+  itemLabel: "une photo", titleField: "titre", layout: "grid", colorField: "color", imageField: "image",
+  fields: [
+    { key: "titre", label: "Légende", type: "text", required: true },
+    { key: "image", label: "Photo", type: "image", hideInList: true },
+    { key: "categorie", label: "Catégorie", type: "text", badge: true },
+    { key: "publie", label: "Affichée sur le site", type: "boolean" },
+    { key: "color", label: "Couleur du visuel", type: "color", hideInList: true },
+  ],
+  seed: legendes.map((titre, i) => ({
+    id: `g${i + 1}`,
+    titre,
+    categorie: "Général",
+    publie: true,
+    color: ["from-vanyo-500/30 to-violet-hi/30", "from-emerald-500/30 to-vanyo-500/30", "from-amber-500/30 to-vanyo-500/30"][i % 3],
+  })),
+});
+
+/** Codes promo — présents dans le vrai panel Vanyo, donc dans chaque démo. */
+const promosSection = (): Section => ({
+  type: "promos", id: "codes-promo", label: "Codes promo", icon: Ticket,
+  seed: [
+    { id: "p1", created_at: ago(20 * D), code: "BIENVENUE10", description: "Première commande", discount_type: "percent", discount_value: 10, active: true, expires_at: null },
+    { id: "p2", created_at: ago(45 * D), code: "FIDELITE20", description: "Clients fidèles", discount_type: "percent", discount_value: 20, active: false, expires_at: null },
+  ],
+});
+
 /** Sections communes à tous les métiers, alignées sur le vrai panel admin Vanyo. */
-const commonSections = (): Section[] => [
+const commonSections = (opts: { galerie?: string[] } = {}): Section[] => [
+  ...(opts.galerie ? [galerieSection(opts.galerie)] : []),
+  promosSection(),
   {
     type: "blog", id: "blog", label: "Blog", icon: Newspaper,
     seed: [
@@ -136,8 +170,8 @@ export const METIERS: MetierConfig[] = [
         ["Léa Fontaine", "lea@mail.fr", "Privatisation", "Bonjour, seriez-vous disponibles pour privatiser la salle un vendredi de septembre ?", false],
         ["Julien Roy", "julien@mail.fr", "Allergies", "Proposez-vous des plats sans lactose ? Merci.", true],
       ]) },
-      { type: "settings", id: "parametres", label: "Paramètres", icon: Settings },
       ...commonSections(),
+      { type: "settings", id: "parametres", label: "Paramètres", icon: Settings },
     ],
   },
 
@@ -197,8 +231,8 @@ export const METIERS: MetierConfig[] = [
       { type: "messages", id: "messages", label: "Messages", icon: Mail, seed: messages([
         ["Paul Girard", "paul@mail.fr", "Estimation", "Bonjour, j'aimerais faire estimer ma maison à Caudéran.", false],
       ]) },
+      ...commonSections({ galerie: ["Notre agence", "Une remise de clés", "L'équipe au travail"] }),
       { type: "settings", id: "parametres", label: "Paramètres", icon: Settings },
-      ...commonSections(),
     ],
   },
 
@@ -248,20 +282,6 @@ export const METIERS: MetierConfig[] = [
           { id: "3", created_at: ago(4 * D), status: "Livrée", client: "Chloé Simon", email: "chloe@mail.fr", produits: "Vase ondulé ×1", montant: 32, adresse: "8 rue Nationale, 59000 Lille", viewed: true },
         ],
       },
-      {
-        type: "collection", id: "promos", label: "Codes promo", icon: Ticket,
-        itemLabel: "un code", titleField: "code", layout: "list",
-        fields: [
-          { key: "code", label: "Code", type: "text", required: true },
-          { key: "reduction", label: "Réduction", type: "number", suffix: " %", badge: true },
-          { key: "description", label: "Description", type: "text" },
-          { key: "actif", label: "Actif", type: "boolean" },
-        ],
-        seed: [
-          { id: "1", code: "BIENVENUE10", reduction: 10, description: "Première commande", actif: true },
-          { id: "2", code: "NOEL20", reduction: 20, description: "Opération fêtes", actif: false },
-        ],
-      },
       { type: "reviews", id: "avis", label: "Avis clients", icon: Star, seed: reviews([
         ["Emma Petit", "", 5, "Emballage soigné et bougies divines. Merci !"],
         ["Chloé Simon", "", 5, "Livraison rapide, produits de grande qualité."],
@@ -269,8 +289,8 @@ export const METIERS: MetierConfig[] = [
       { type: "messages", id: "messages", label: "Messages", icon: Mail, seed: messages([
         ["Nadia K.", "nadia@mail.fr", "Réassort", "Bonjour, le vase terracotta sera-t-il bientôt réapprovisionné ?", false],
       ]) },
+      ...commonSections({ galerie: ["Notre atelier", "Les coulisses", "Un coffret cadeau"] }),
       { type: "settings", id: "parametres", label: "Paramètres", icon: Settings },
-      ...commonSections(),
     ],
   },
 
@@ -340,8 +360,8 @@ export const METIERS: MetierConfig[] = [
       { type: "messages", id: "messages", label: "Messages", icon: Mail, seed: messages([
         ["Karim B.", "karim@mail.fr", "Disponibilité", "Bonjour, intervenez-vous à Muret pour un dégât des eaux ?", false],
       ]) },
-      { type: "settings", id: "parametres", label: "Paramètres", icon: Settings },
       ...commonSections(),
+      { type: "settings", id: "parametres", label: "Paramètres", icon: Settings },
     ],
   },
 
@@ -410,8 +430,8 @@ export const METIERS: MetierConfig[] = [
       { type: "messages", id: "messages", label: "Messages", icon: Mail, seed: messages([
         ["Camille V.", "camille@mail.fr", "Mariage", "Bonjour, faites-vous les coiffures de mariée à domicile ?", false],
       ]) },
+      ...commonSections({ galerie: ["Notre salon", "Un balayage signature", "L'espace manucure"] }),
       { type: "settings", id: "parametres", label: "Paramètres", icon: Settings },
-      ...commonSections(),
     ],
   },
 
@@ -476,8 +496,8 @@ export const METIERS: MetierConfig[] = [
       { type: "messages", id: "messages", label: "Messages", icon: Mail, seed: messages([
         ["Marie D.", "marie@mail.fr", "Résultats", "Bonjour, mes résultats d'analyse sont-ils disponibles ?", false],
       ]) },
+      ...commonSections({ galerie: ["La salle d'attente", "Le cabinet", "L'accueil"] }),
       { type: "settings", id: "parametres", label: "Paramètres", icon: Settings },
-      ...commonSections(),
     ],
   },
 
@@ -543,8 +563,8 @@ export const METIERS: MetierConfig[] = [
       { type: "messages", id: "messages", label: "Messages", icon: Mail, seed: messages([
         ["Mairie de Lille", "culture@mail.fr", "Partenariat", "Nous aimerions vous proposer un partenariat pour 2027.", false],
       ]) },
+      ...commonSections({ galerie: ["Le jardin partagé", "Une journée plantation", "Nos bénévoles"] }),
       { type: "settings", id: "parametres", label: "Paramètres", icon: Settings },
-      ...commonSections(),
     ],
   },
 
@@ -615,8 +635,8 @@ export const METIERS: MetierConfig[] = [
       { type: "messages", id: "messages", label: "Messages", icon: Mail, seed: messages([
         ["Julie P.", "julie@mail.fr", "Disponibilité août", "Bonjour, êtes-vous libre le 22 août pour un portrait famille ?", false],
       ]) },
-      { type: "settings", id: "parametres", label: "Paramètres", icon: Settings },
       ...commonSections(),
+      { type: "settings", id: "parametres", label: "Paramètres", icon: Settings },
     ],
   },
 
@@ -695,8 +715,8 @@ export const METIERS: MetierConfig[] = [
       { type: "messages", id: "messages", label: "Messages", icon: Mail, seed: messages([
         ["Antoine V.", "antoine@mail.fr", "Rachat véhicule", "Bonjour, reprenez-vous les anciens véhicules à l'achat d'une occasion ?", false],
       ]) },
+      ...commonSections({ galerie: ["L'atelier", "Le pont de levage", "Notre équipe"] }),
       { type: "settings", id: "parametres", label: "Paramètres", icon: Settings },
-      ...commonSections(),
     ],
   },
 ];

@@ -22,7 +22,9 @@ export function DemoCallout() {
         subtitle="Chaque site Vanyo est livré avec un espace d'administration simple et puissant, adapté à votre métier. Choisissez votre secteur et testez-le, sans inscription."
       />
 
-      <div className="mt-12 grid items-center gap-8 lg:grid-cols-2">
+      {/* overflow-x-clip : les deux blocs entrent en scène latéralement ;
+          sans cela ils élargissent la page tant qu'ils ne sont pas animés. */}
+      <div className="mt-12 grid items-center gap-8 overflow-x-clip lg:grid-cols-2">
         {/* Texte + arguments + CTA */}
         <Reveal direction="right">
           <div>
