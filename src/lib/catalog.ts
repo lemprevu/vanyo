@@ -50,6 +50,10 @@ const DEFAULT_MODULES: SiteModule[] = [
   { key: "newsletter", label: "Inscription newsletter", description: "Collecte des e-mails et export de votre liste.", price: 90, group: "Conversion", icon: "Send" },
   { key: "chat", label: "Chat en direct", description: "Discutez avec vos visiteurs depuis votre téléphone.", price: 90, group: "Conversion", icon: "MessageCircle" },
   { key: "avis", label: "Avis clients", description: "Collecte, modération et affichage de vos avis.", price: 120, group: "Conversion", icon: "Star" },
+  // Prestation la plus lourde du catalogue : il faut construire la base de
+  // connaissances à partir de TOUT le contenu du client, brancher le modèle,
+  // régler le ton, et tester les réponses une par une. D'où le tarif.
+  { key: "assistant_ia", label: "Assistant IA sur votre site", description: "Un conseiller intelligent qui connaît tout votre site, répond à vos visiteurs 24 h/24, les guide vers la bonne page et déclenche les demandes de devis.", price: 1490, group: "Conversion", icon: "Sparkles" },
 
   // ── Vente ────────────────────────────────────────────────────────
   { key: "paiement", label: "Paiement en ligne", description: "Encaissement sécurisé par carte (Stripe).", price: 280, group: "Vente", icon: "CreditCard" },

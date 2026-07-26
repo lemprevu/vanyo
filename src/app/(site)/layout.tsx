@@ -6,6 +6,7 @@ import { DeferredEffects } from "@/components/fx/DeferredEffects";
 import { SiteRuntime } from "@/components/SiteRuntime";
 import { PageTracker } from "@/components/PageTracker";
 import { SiteThemeProvider } from "@/components/SiteThemeProvider";
+import { Assistant } from "@/components/ai/Assistant";
 import { getSiteSettings } from "@/lib/data";
 
 export const revalidate = 60;
@@ -57,6 +58,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
         <Navbar />
         <main className="relative z-10 flex-1 pt-24">{children}</main>
         <Footer settings={settings} />
+        <Assistant />
       </SiteThemeProvider>
     </>
   );

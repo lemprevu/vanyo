@@ -148,7 +148,7 @@ export const TESTIMONIALS: Testimonial[] = [
 export type Faq = { question: string; answer: string };
 
 export const FAQ: Faq[] = [
-  { question: "Combien coûte la création d'un site ?", answer: "Nos sites démarrent à 690€ pour une vitrine et s'adaptent à votre projet. Après un échange gratuit, vous recevez un devis clair et détaillé, sans surprise." },
+  { question: "Combien coûte la création d'un site ?", answer: "Nos sites démarrent à 390€ pour une vitrine et s'adaptent à votre projet. Après un échange gratuit, vous recevez un devis clair et détaillé, sans surprise." },
   { question: "Quels sont les délais de livraison ?", answer: "En moyenne 12 jours pour un site vitrine. Les projets plus complexes (e-commerce, application) prennent quelques semaines. On s'engage sur des délais précis dès le départ." },
   { question: "Est-ce que je pourrai modifier mon site moi-même ?", answer: "Oui. Nous livrons un panel d'administration simple et intuitif qui vous permet de modifier textes, images, articles et bien plus, sans aucune compétence technique." },
   { question: "Le référencement Google est-il inclus ?", answer: "Chaque site est optimisé SEO dès la conception : structure propre, vitesse, balises, sitemap. Nous proposons aussi un accompagnement SEO avancé pour aller plus loin." },
