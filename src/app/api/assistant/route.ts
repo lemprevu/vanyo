@@ -5,6 +5,8 @@ import { buildKnowledge, PAGES } from "@/lib/ai/knowledge";
 import { buildIndex, search, type SearchIndex } from "@/lib/ai/retrieval";
 import { ACTION_MARKER, buildSystemPrompt, fallbackAnswer, type Memory, type PageContext } from "@/lib/ai/prompt";
 import { rateLimit, clientIp } from "@/lib/rateLimit";
+import { normalize } from "@/lib/ai/retrieval";
+import { cacheKey, clearAnswerCache, readCache, recordSpend, withinBudget, writeCache } from "@/lib/ai/budget";
 
 /**
  * Point d'entrée de l'assistant.
@@ -22,7 +24,12 @@ export const runtime = "nodejs";
 // Chaque réponse dépend du message : rien à mettre en cache.
 export const dynamic = "force-dynamic";
 
-const MODEL = "claude-opus-5";
+/**
+ * Modèle utilisé. Claude Opus 5 par défaut (meilleure qualité de conseil).
+ * `ASSISTANT_MODEL=claude-haiku-4-5` divise la facture par cinq si le volume
+ * devient important — les réponses restent bonnes, le corpus étant fourni.
+ */
+const MODEL = process.env.ASSISTANT_MODEL || "claude-opus-5";
 const MAX_MESSAGE_CHARS = 2000;
 const MAX_HISTORY = 12;
 
@@ -37,6 +44,9 @@ function getIndex(overrides: unknown): SearchIndex {
   if (cached?.key === key) return cached.index;
   const index = buildIndex(buildKnowledge(overrides as never));
   cached = { key, index };
+  // Les tarifs viennent de changer : les réponses en cache citeraient des
+  // prix périmés, on repart de zéro.
+  clearAnswerCache();
   return index;
 }
 
@@ -137,23 +147,40 @@ export async function POST(req: Request) {
   ].join(" ");
   const hits = search(index, lastUser.content, { limit: 8, context: contextText }).map((h) => h.chunk);
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-
-  /* ── Sans clé : recherche locale seule ─────────────────────── */
-  if (!apiKey) {
-    const fb = fallbackAnswer(hits);
-    const stream = new ReadableStream({
+  /** Sert une réponse déjà connue, sans appeler le modèle. */
+  const serve = (answer: { text: string; navigate: string | null; suggestions: string[] }) => {
+    const s = new ReadableStream({
       start(controller) {
         const enc = new TextEncoder();
-        controller.enqueue(enc.encode(sse({ type: "text", v: fb.text })));
-        controller.enqueue(enc.encode(sse({ type: "actions", navigate: fb.navigate, suggestions: fb.suggestions })));
+        controller.enqueue(enc.encode(sse({ type: "text", v: answer.text })));
+        controller.enqueue(
+          enc.encode(sse({ type: "actions", navigate: answer.navigate, suggestions: answer.suggestions })),
+        );
         controller.enqueue(enc.encode(sse({ type: "done" })));
         controller.close();
       },
     });
-    return new Response(stream, {
+    return new Response(s, {
       headers: { "content-type": "text/event-stream; charset=utf-8", "cache-control": "no-store" },
     });
+  };
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+
+  // Pas de clé, ou plafond mensuel atteint : la recherche locale prend le
+  // relais. Le visiteur obtient toujours une réponse — l'assistant ne tombe
+  // jamais en panne et ne renvoie jamais d'erreur pour une raison de coût.
+  if (!apiKey || !withinBudget()) {
+    return serve(fallbackAnswer(hits));
+  }
+
+  // Le cache ne s'applique qu'à une première question : au-delà, la réponse
+  // dépend de la conversation et ne peut pas être resservie à l'identique.
+  const reusable = history.length === 1;
+  const key = cacheKey(normalize(lastUser.content), page.path);
+  if (reusable) {
+    const hit = readCache(key);
+    if (hit) return serve(hit);
   }
 
   /* ── Avec clé : réponse générée, en flux ───────────────────── */
@@ -214,6 +241,8 @@ export async function POST(req: Request) {
         }
 
         const final = await s.finalMessage();
+        recordSpend(final.usage.output_tokens ?? 0);
+
         if (final.stop_reason === "refusal") {
           send({ type: "text", v: "Je préfère ne pas répondre à cette demande. Je peux en revanche vous aider sur votre projet de site." });
           send({ type: "actions", navigate: null, suggestions: ["Combien coûte un site ?", "Je veux un devis"] });
@@ -244,6 +273,12 @@ export async function POST(req: Request) {
 
         send({ type: "actions", navigate, suggestions });
         send({ type: "done" });
+
+        // Mémorise la réponse : la même question ne sera plus payée.
+        if (reusable) {
+          const visible = (at === -1 ? full : full.slice(0, at)).trim();
+          writeCache(key, { text: visible, navigate, suggestions });
+        }
       } catch (err) {
         console.error("[assistant]", err);
         send({
