@@ -21,8 +21,6 @@ export async function getSiteSettingsFull(): Promise<SiteSettingsFull> {
     notify_enabled: true,
     notify_events: ["devis", "messages"],
     pagespeed_api_key: null,
-    ai_image_key: null,
-    ai_image_model: null,
   };
 
   const supabase = createServiceClient();

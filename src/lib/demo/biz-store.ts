@@ -23,8 +23,6 @@ export function buildSeed(config: MetierConfig): BizState {
     notify_enabled: true,
     notify_events: ["devis", "messages"],
     pagespeed_api_key: null,
-    ai_image_key: null,
-    ai_image_model: null,
     site_name: config.businessName,
     brand_color: config.accent,
     ...config.settings,

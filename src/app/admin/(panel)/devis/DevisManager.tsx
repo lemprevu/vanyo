@@ -368,12 +368,7 @@ export function DevisManager({
 
                     {vision && (
                       <div className="pt-2">
-                        <AiVisionPanel
-                          devisId={selected.id}
-                          vision={vision}
-                          initialImage={selected.vision_image}
-                          live={live}
-                        />
+                        <AiVisionPanel devisId={selected.id} vision={vision} />
                       </div>
                     )}
 

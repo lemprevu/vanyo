@@ -163,10 +163,6 @@ export type SiteSettingsFull = SiteSettings & {
   notify_events: string[];
   /** Clé API PageSpeed Insights (Google Cloud), optionnelle — voir /admin/performance. */
   pagespeed_api_key: string | null;
-  /** Clé d'API pour la génération d'aperçus par IA (OpenAI). Usage interne. */
-  ai_image_key: string | null;
-  /** Modèle d'image à utiliser (par défaut gpt-image-1). */
-  ai_image_model: string | null;
 };
 
 export const CATEGORIES_REALISATIONS = [

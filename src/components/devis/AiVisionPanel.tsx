@@ -1,67 +1,65 @@
 "use client";
 
-import { useState } from "react";
-import { Sparkles, Loader2, Download, RefreshCw, Lock, AlertTriangle } from "lucide-react";
-import { VisionPreview } from "@/components/devis/VisionPreview";
-import type { VisionInput } from "@/lib/vision";
+import { useMemo, useState } from "react";
+import { Loader2, Download, Shuffle, Lock, Check } from "lucide-react";
+import { buildVisionSvg, downloadVision, pickArchetype, type VisionInput } from "@/lib/vision";
 
 /**
  * Aperçu du projet pour une demande de devis — OUTIL INTERNE.
  *
- * Deux niveaux :
- *  1. un schéma de mise en page généré localement (toujours disponible,
- *     gratuit, instantané) ;
- *  2. une vraie image générée par IA à partir des réponses du client, à la
- *     demande, si une clé d'API est configurée.
- *
- * Rien de tout cela n'est montré au client : c'est un support pour se faire
- * une idée de ce qu'il a en tête avant l'échange.
+ * Généré intégralement ici, à partir des réponses du client : aucun service
+ * extérieur, aucune clé d'API, aucun coût, et rien qui sorte du panel. Le
+ * bouton « Autre proposition » change la graine du générateur, ce qui donne
+ * une nouvelle structure de page, de nouveaux visuels et une autre composition
+ * pour le même brief.
  */
+
+const ARCHETYPE_LABELS: Record<string, string> = {
+  classic: "Vitrine classique",
+  centered: "Vitrine centrée",
+  sidebar: "Portail avec barre latérale",
+  magazine: "Mise en page magazine",
+  fullbleed: "Grande image d'ouverture",
+  catalog: "Grille catalogue",
+  split: "Écran scindé",
+};
+
 export function AiVisionPanel({
   devisId,
   vision,
-  initialImage,
-  live,
 }: {
   devisId: string;
-  /** Réponses du client, pour le schéma de secours. */
+  /** Réponses du client. */
   vision: VisionInput;
-  /** Image déjà générée et enregistrée, le cas échéant. */
-  initialImage?: string | null;
-  /** Faux en mode démonstration : la génération n'est pas disponible. */
-  live: boolean;
 }) {
-  const [image, setImage] = useState<string | null>(initialImage ?? null);
-  const [state, setState] = useState<"idle" | "loading" | "error">("idle");
-  const [error, setError] = useState("");
-
-  async function generate() {
-    setState("loading");
-    setError("");
-    try {
-      const res = await fetch("/api/admin/vision", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ devisId }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "La génération a échoué.");
-      setImage(data.image);
-      setState("idle");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "La génération a échoué.");
-      setState("error");
+  // Graine de départ dérivée de l'identifiant : la même demande rouvre
+  // toujours sur le même aperçu, sans rien avoir à stocker.
+  const baseSeed = useMemo(() => {
+    let h = 2166136261;
+    for (let i = 0; i < devisId.length; i++) {
+      h ^= devisId.charCodeAt(i);
+      h = Math.imul(h, 16777619);
     }
-  }
+    return Math.abs(h);
+  }, [devisId]);
 
-  function download() {
-    if (!image) return;
-    const a = document.createElement("a");
-    a.href = image;
-    a.download = `apercu-projet-${devisId.slice(0, 8)}.png`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+  const [variant, setVariant] = useState(0);
+  const [saving, setSaving] = useState<"idle" | "loading" | "done">("idle");
+
+  const input = useMemo<VisionInput>(() => ({ ...vision, seed: baseSeed + variant * 7919 }), [vision, baseSeed, variant]);
+  const svg = useMemo(() => buildVisionSvg(input), [input]);
+  const archetype = useMemo(() => pickArchetype(input), [input]);
+
+  async function save() {
+    setSaving("loading");
+    try {
+      const name = (vision.siteName || "projet").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      await downloadVision(svg, `apercu-${name}-${variant + 1}.png`);
+      setSaving("done");
+      setTimeout(() => setSaving("idle"), 2200);
+    } catch {
+      setSaving("idle");
+    }
   }
 
   return (
@@ -75,73 +73,40 @@ export function AiVisionPanel({
         </p>
       </div>
 
-      {image ? (
-        <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={image}
-            alt="Aperçu du projet généré par IA"
-            className="w-full rounded-2xl border border-white/10"
-          />
-          <div className="flex flex-wrap gap-2">
-            <button onClick={download} className="btn-premium btn-ghost px-3 py-2 text-xs">
-              <Download className="h-3.5 w-3.5" /> Télécharger
-            </button>
-            {live && (
-              <button
-                onClick={generate}
-                disabled={state === "loading"}
-                className="btn-premium btn-ghost px-3 py-2 text-xs disabled:opacity-60"
-              >
-                {state === "loading" ? (
-                  <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Génération…</>
-                ) : (
-                  <><RefreshCw className="h-3.5 w-3.5" /> Regénérer</>
-                )}
-              </button>
+      <div
+        className="overflow-hidden rounded-2xl border border-white/10 [&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
+        dangerouslySetInnerHTML={{ __html: svg }}
+      />
+
+      <div className="flex items-center justify-between gap-3">
+        <span className="min-w-0 text-[11px] text-white/40">
+          <span className="text-white/60">{ARCHETYPE_LABELS[archetype] ?? archetype}</span>
+          {variant > 0 && ` · proposition ${variant + 1}`}
+        </span>
+        <div className="flex shrink-0 gap-2">
+          <button
+            onClick={() => setVariant((v) => v + 1)}
+            className="btn-premium btn-ghost px-3 py-2 text-xs"
+            title="Génère une autre structure de page et d'autres visuels"
+          >
+            <Shuffle className="h-3.5 w-3.5" /> Autre proposition
+          </button>
+          <button onClick={save} disabled={saving === "loading"} className="btn-premium btn-ghost px-3 py-2 text-xs">
+            {saving === "loading" ? (
+              <><Loader2 className="h-3.5 w-3.5 animate-spin" /> …</>
+            ) : saving === "done" ? (
+              <><Check className="h-3.5 w-3.5 text-emerald-400" /> Enregistré</>
+            ) : (
+              <><Download className="h-3.5 w-3.5" /> Image</>
             )}
-          </div>
-        </>
-      ) : (
-        <>
-          {/* Schéma local : disponible tout de suite, sans clé ni coût. */}
-          <VisionPreview vision={vision} downloadable={false} />
-          <p className="text-[11px] text-white/35">
-            Schéma de mise en page déduit des réponses. Pour une vraie image, lancez la génération par IA.
-          </p>
+          </button>
+        </div>
+      </div>
 
-          {live ? (
-            <button
-              onClick={generate}
-              disabled={state === "loading"}
-              className="btn-premium btn-primary w-full px-4 py-2.5 text-sm disabled:opacity-70"
-            >
-              {state === "loading" ? (
-                <><Loader2 className="h-4 w-4 animate-spin" /> Génération en cours…</>
-              ) : (
-                <><Sparkles className="h-4 w-4" /> Générer une image par IA</>
-              )}
-            </button>
-          ) : (
-            <p className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-[11px] text-white/45">
-              La génération par IA nécessite Supabase et une clé d&apos;API — indisponible en mode démonstration.
-            </p>
-          )}
-        </>
-      )}
-
-      {state === "loading" && (
-        <p className="text-[11px] text-white/40">
-          La génération prend généralement 15 à 40 secondes.
-        </p>
-      )}
-
-      {state === "error" && (
-        <p className="flex items-start gap-2 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-[11px] text-rose-200">
-          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          {error}
-        </p>
-      )}
+      <p className="text-[11px] leading-snug text-white/35">
+        Généré sur votre machine à partir des réponses du client — métier, style, couleur, ambiance et
+        fonctionnalités demandées. Aucun service extérieur, aucune limite d&apos;utilisation.
+      </p>
     </div>
   );
 }

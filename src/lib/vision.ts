@@ -28,7 +28,50 @@ export type VisionInput = {
   couleurs?: string | null;
   pages?: number | null;
   modules?: string[] | null;
+  /**
+   * Graine de génération. Les mêmes réponses avec la même graine redonnent
+   * exactement la même image ; changer la graine produit une autre variante
+   * du même brief (c'est le bouton « Regénérer »).
+   */
+  seed?: number;
 };
+
+/* ------------------------------------------------------------------ */
+/*  Moteur de variation                                                */
+/* ------------------------------------------------------------------ */
+
+/** Générateur pseudo-aléatoire déterministe (mulberry32). */
+function makeRandom(seed: number) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+type Rnd = {
+  /** Réel dans [min, max[. */
+  range: (min: number, max: number) => number;
+  /** Entier dans [min, max]. */
+  int: (min: number, max: number) => number;
+  /** Un élément au hasard. */
+  pick: <T>(list: readonly T[]) => T;
+  /** Vrai avec la probabilité donnée. */
+  chance: (p: number) => boolean;
+};
+
+function makeRnd(seed: number): Rnd {
+  const r = makeRandom(seed);
+  const range = (min: number, max: number) => min + r() * (max - min);
+  return {
+    range,
+    int: (min, max) => Math.floor(range(min, max + 1)),
+    pick: (list) => list[Math.floor(r() * list.length)],
+    chance: (p) => r() < p,
+  };
+}
 
 export const VISION_WIDTH = 1200;
 export const VISION_HEIGHT = 820;
@@ -124,6 +167,90 @@ function shift(hex: string, ratio: number): string {
     Math.max(0, Math.min(255, Math.round(ratio >= 0 ? c + (255 - c) * ratio : c * (1 + ratio))))
   );
   return "#" + ch.map((c) => c.toString(16).padStart(2, "0")).join("");
+}
+
+/* ------------------------------------------------------------------ */
+/*  Images procédurales                                                */
+/* ------------------------------------------------------------------ */
+
+function hexToHsl(hex: string): [number, number, number] {
+  const n = parseInt(hex.replace("#", ""), 16);
+  const r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  if (max === min) return [0, 0, l];
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  const h =
+    max === r ? ((g - b) / d + (g < b ? 6 : 0)) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return [(h * 60 + 360) % 360, s, l];
+}
+
+const hsl = (h: number, s: number, l: number) =>
+  `hsl(${((h % 360) + 360) % 360} ${Math.round(Math.max(0, Math.min(1, s)) * 100)}% ${Math.round(
+    Math.max(0, Math.min(1, l)) * 100
+  )}%)`;
+
+/**
+ * Fabrique un jeu de « photos » procédurales.
+ *
+ * Chaque visuel est un motif SVG composé de plusieurs taches de couleur
+ * floutées : à l'échelle d'une maquette, l'œil le lit comme une photographie
+ * abstraite plutôt que comme un aplat. Les teintes dérivent de la couleur du
+ * client (harmonies analogues et complémentaires), la composition vient de la
+ * graine — deux générations ne donnent donc jamais les mêmes visuels.
+ */
+function buildPhotos(count: number, rnd: Rnd, accent: string, dark: boolean): { defs: string; ids: string[] } {
+  const [baseHue, baseSat] = hexToHsl(accent);
+  const defs: string[] = [
+    `<filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="14"/></filter>`,
+  ];
+  const ids: string[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const id = `ph${i}`;
+    ids.push(id);
+
+    // Chaque visuel a sa propre dominante, proche de la couleur de marque.
+    // L'écart reste volontairement faible : au-delà, les visuels jurent avec
+    // la charte du client (du vert pomme sur un site bordeaux, par exemple).
+    const hue = baseHue + rnd.range(-22, 22);
+    const sat = Math.max(0.16, Math.min(0.7, baseSat * rnd.range(0.55, 1)));
+    const light = dark ? rnd.range(0.16, 0.3) : rnd.range(0.5, 0.72);
+
+    const shapes: string[] = [
+      `<rect width="100" height="100" fill="${hsl(hue, sat * 0.75, light)}"/>`,
+    ];
+
+    // Trois à cinq taches floutées, en harmonie avec la dominante.
+    const blobs = rnd.int(3, 5);
+    for (let b = 0; b < blobs; b++) {
+      const bh = hue + rnd.pick([-34, -18, -8, 12, 22, 36]) * rnd.range(0.5, 1);
+      const bl = dark ? light + rnd.range(0.04, 0.26) : light + rnd.range(-0.24, 0.24);
+      shapes.push(
+        `<ellipse cx="${rnd.range(-10, 110).toFixed(1)}" cy="${rnd.range(-10, 110).toFixed(1)}" rx="${rnd
+          .range(22, 62)
+          .toFixed(1)}" ry="${rnd.range(20, 58).toFixed(1)}" fill="${hsl(bh, sat, bl)}" opacity="${rnd
+          .range(0.45, 0.9)
+          .toFixed(2)}" filter="url(#soft)"/>`
+      );
+    }
+
+    // Voile de profondeur : évite l'effet « dégradé plat ».
+    shapes.push(
+      `<rect width="100" height="100" fill="${dark ? "#000" : "#fff"}" opacity="${rnd
+        .range(0.04, 0.14)
+        .toFixed(2)}"/>`
+    );
+
+    defs.push(
+      `<pattern id="${id}" patternUnits="objectBoundingBox" width="1" height="1" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">${shapes.join(
+        ""
+      )}</pattern>`
+    );
+  }
+
+  return { defs: defs.join(""), ids };
 }
 
 /* ------------------------------------------------------------------ */
@@ -307,6 +434,9 @@ export function pickArchetype(input: VisionInput): ArchetypeKey {
     input.styleVisuel ?? "",
     String(input.pages ?? ""),
     (input.modules ?? []).slice().sort().join("|"),
+    // La graine entre dans la signature : « Regénérer » peut donc changer la
+    // structure de page, pas seulement les couleurs et les visuels.
+    String(input.seed ?? ""),
   ].join("~");
 
   const preferred = types.map((t) => BLUEPRINTS[t]?.prefer).filter(Boolean) as ArchetypeKey[];
@@ -341,6 +471,10 @@ type Ctx = {
   badges: string[];
   /** Zone utile intérieure de la fenêtre du navigateur. */
   x: number; y: number; w: number; h: number;
+  /** Variations pilotées par la graine. */
+  rnd: Rnd;
+  /** Visuel procédural n° i (bouclé sur le jeu disponible). */
+  photo: (i?: number) => string;
 };
 
 const cap = (s: string, t: Theme) => (t.upper ? s.toUpperCase() : s);
@@ -398,12 +532,12 @@ function footer(c: Ctx, y: number, height = 44): string {
 }
 
 /** Carte produit / service générique. */
-function card(c: Ctx, x: number, y: number, w: number, h: number, title: string, meta: string, imageRatio = 0.55): string {
+function card(c: Ctx, x: number, y: number, w: number, h: number, title: string, meta: string, imageRatio = 0.55, photoIndex = 0): string {
   const imgH = Math.round(h * imageRatio);
   return [
     rect(x, y, w, h, c.t.surface, Math.min(c.r, 16)),
-    rect(x, y, w, imgH, "url(#g1)", Math.min(c.r, 16)),
-    rect(x, y + imgH - Math.min(c.r, 16), w, Math.min(c.r, 16), "url(#g1)"),
+    rect(x, y, w, imgH, c.photo(photoIndex), Math.min(c.r, 16)),
+    rect(x, y + imgH - Math.min(c.r, 16), w, Math.min(c.r, 16), c.photo(photoIndex)),
     text(x + 12, y + imgH + 22, clip(title, 26), 11.5, c.t.text, c.f, 600),
     text(x + 12, y + imgH + 40, meta, 12, c.accent, c.f, 700),
   ].join("");
@@ -435,7 +569,7 @@ function renderClassic(c: Ctx): string {
 
   const vx = c.x + textW + 24;
   const vw = c.w - textW - 24;
-  p.push(rect(vx, y, vw, 208, "url(#g1)", c.r));
+  p.push(rect(vx, y, vw, 208, c.photo(0), c.r));
   p.push(rect(vx + 20, y + 22, vw - 40, 11, "#FFFFFF", 5, 0.5));
   p.push(rect(vx + 20, y + 40, (vw - 40) * 0.6, 11, "#FFFFFF", 5, 0.32));
   p.push(rect(vx + 20, y + 74, vw - 40, 112, "#FFFFFF", Math.min(c.r, 12), c.t.dark ? 0.12 : 0.4));
@@ -451,7 +585,7 @@ function renderClassic(c: Ctx): string {
   const cw = (c.w - gap * 3) / 4;
   const ch = Math.min(150, c.y + c.h - y - 60);
   c.bp.cards.slice(0, 4).forEach(([t2, m], i) => {
-    p.push(card(c, c.x + i * (cw + gap), y, cw, ch, t2, m));
+    p.push(card(c, c.x + i * (cw + gap), y, cw, ch, t2, m, 0.55, i + 1));
   });
 
   p.push(footer(c, c.y + c.h - 44));
@@ -564,7 +698,7 @@ function renderSidebar(c: Ctx): string {
   rows.forEach(([t2, m], i) => {
     const ry = y + i * (rh + 10);
     p.push(rect(cx, ry, cw, rh, c.t.surface, Math.min(c.r, 14)));
-    p.push(rect(cx + 10, ry + 10, rh * 1.35, rh - 20, "url(#g1)", Math.min(c.r, 10)));
+    p.push(rect(cx + 10, ry + 10, rh * 1.35, rh - 20, c.photo(i), Math.min(c.r, 10)));
     p.push(text(cx + rh * 1.35 + 24, ry + rh / 2 - 4, t2, 12.5, c.t.text, c.f, 600));
     p.push(text(cx + rh * 1.35 + 24, ry + rh / 2 + 14, "3 pièces · 78 m² · Bordeaux", 10.5, c.t.muted, c.f, 400));
     p.push(text(cx + cw - 16, ry + rh / 2 + 4, m, 13.5, c.accent, c.f, 700, "end"));
@@ -596,7 +730,7 @@ function renderMagazine(c: Ctx): string {
   // Une : grande image + titre par-dessus, à gauche
   const featW = Math.round(c.w * 0.58);
   const featH = 250;
-  p.push(rect(c.x, y, featW, featH, "url(#g1)", Math.min(c.r, 10)));
+  p.push(rect(c.x, y, featW, featH, c.photo(0), Math.min(c.r, 10)));
   p.push(rect(c.x, y + featH - 92, featW, 92, c.t.bg, 0, 0.86));
   p.push(rect(c.x + 16, y + featH - 76, 74, 20, c.accent, Math.min(c.r, 4)));
   p.push(text(c.x + 53, y + featH - 62, "À LA UNE", 9.5, "#FFFFFF", c.f, 700, "middle", 1));
@@ -608,8 +742,8 @@ function renderMagazine(c: Ctx): string {
   const sw = c.w - featW - 26;
   p.push(sectionTitle(c, sx, y + 12, c.bp.sectionTitle));
   let by = y + 36;
-  c.bp.cards.slice(1, 5).forEach(([t2, m]) => {
-    p.push(rect(sx, by, 54, 44, "url(#g1)", Math.min(c.r, 8)));
+  c.bp.cards.slice(1, 5).forEach(([t2, m], bi) => {
+    p.push(rect(sx, by, 54, 44, c.photo(bi + 1), Math.min(c.r, 8)));
     p.push(text(sx + 66, by + 18, clip(t2, 28), 11.5, c.t.text, c.f, 600));
     p.push(text(sx + 66, by + 34, m, 10, c.t.muted, c.f, 400));
     by += 54;
@@ -643,7 +777,7 @@ function renderFullbleed(c: Ctx): string {
   const heroH = Math.round(c.h * 0.52);
 
   // Image plein cadre, débordant les marges
-  p.push(rect(c.x - 24, c.y - 20, c.w + 48, heroH, "url(#g2)"));
+  p.push(rect(c.x - 24, c.y - 20, c.w + 48, heroH, c.photo(0)));
   p.push(rect(c.x - 24, c.y - 20, c.w + 48, heroH, "#000000", 0, c.t.dark ? 0.3 : 0.18));
 
   // Nav en surimpression
@@ -682,7 +816,7 @@ function renderFullbleed(c: Ctx): string {
     p.push(text(x + 14, y + 52, "Description courte du plat", 10.5, c.t.muted, c.f, 400));
     p.push(text(x + cw - 14, y + 32, m, 14, c.accent, c.f, 700, "end"));
     // Visuel du plat : occupe la place restante sous le texte.
-    if (ch > 110) p.push(rect(x + 14, y + 66, cw - 28, ch - 80, "url(#g1)", Math.min(c.r, 10)));
+    if (ch > 110) p.push(rect(x + 14, y + 66, cw - 28, ch - 80, c.photo(i), Math.min(c.r, 10)));
   });
 
   p.push(footer(c, c.y + c.h - 44));
@@ -726,7 +860,7 @@ function renderCatalog(c: Ctx): string {
   c.bp.cards.slice(0, cols * rows).forEach(([t2, m], i) => {
     const x = c.x + (i % cols) * (cw + gap);
     const yy = y + Math.floor(i / cols) * (ch + gap);
-    p.push(card(c, x, yy, cw, ch, t2, m, 0.62));
+    p.push(card(c, x, yy, cw, ch, t2, m, 0.62, i));
     // Pastille « nouveau » sur le premier
     if (i === 0) {
       p.push(rect(x + 10, yy + 10, 58, 18, c.accent, Math.min(c.r, 9)));
@@ -813,6 +947,7 @@ const RENDERERS: Record<ArchetypeKey, (c: Ctx) => string> = {
 /* ------------------------------------------------------------------ */
 
 export function buildVisionSvg(input: VisionInput): string {
+  const rnd = makeRnd(input.seed ?? 1);
   const t = themeFor(input.styleVisuel);
   const accent = resolveAccent(input.couleurs);
   const accentSoft = shift(accent, t.dark ? -0.62 : 0.86);
@@ -838,8 +973,13 @@ export function buildVisionSvg(input: VisionInput): string {
 
   const parts: string[] = [];
 
-  // ── Défs : dégradés ───────────────────────────────────────────────
+  // Jeu de visuels procéduraux, propre à cette génération.
+  const photos = buildPhotos(8, rnd, accent, t.dark);
+  const photo = (i = 0) => `url(#${photos.ids[Math.abs(i) % photos.ids.length]})`;
+
+  // ── Défs : visuels + dégradés ────────────────────────────────────
   parts.push(`<defs>
+    ${photos.defs}
     <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="${accent}" stop-opacity="${t.dark ? 0.5 : 0.85}"/>
       <stop offset="100%" stop-color="${shift(accent, 0.4)}" stop-opacity="${t.dark ? 0.18 : 0.5}"/>
@@ -878,6 +1018,7 @@ export function buildVisionSvg(input: VisionInput): string {
     t, accent, accentSoft, f: t.font, r: t.radius,
     siteName, cta: ctaLabel(input.objectifs ?? []), nav: bp.nav.slice(0, navCount), bp, badges,
     x: WX + 34, y: WY + CHROME + 8, w: WW - 68, h: WH - CHROME - 16,
+    rnd, photo,
   };
 
   // Le contenu est découpé à la fenêtre, pour qu'un panneau plein cadre

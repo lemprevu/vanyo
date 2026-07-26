@@ -158,10 +158,6 @@ export type Devis = {
   /** Remise appliquée au moment de l'envoi (%) et son libellé. */
   remise_percent?: number | null;
   remise_label?: string | null;
-  /** Aperçu généré par IA (data URL). Outil interne, jamais montré au client. */
-  vision_image?: string | null;
-  /** Description envoyée au modèle, conservée pour pouvoir la rejouer. */
-  vision_prompt?: string | null;
 
   // ── Champs hérités de la v1 (anciennes demandes) ───────────────
   /** Ancien champ mono-valeur ; remplacé par `types_site`. */
