@@ -14,9 +14,10 @@ import { MessageCircle, X, Send, Sparkles, RotateCcw, ArrowUpRight } from "lucid
  */
 
 type Msg = { role: "user" | "assistant"; content: string };
-type Memory = { prenom?: string; projet?: string; besoins?: string[] };
+/** Etat de conversation du moteur serveur : opaque cote client, simplement renvoye tel quel. */
+type ConvState = { mode?: string; slots?: Record<string, unknown>; posees?: string[]; tour?: number };
 
-const STORAGE_KEY = "vanyo-assistant-v1";
+const STORAGE_KEY = "vanyo-assistant-v2";
 const MAX_KEPT = 24;
 
 const OPENERS = [
@@ -44,18 +45,18 @@ export function Assistant() {
   // étant fermé au départ, rien de ce qui est relu n'est affiché tout de
   // suite — l'hydratation reste identique au HTML rendu côté serveur.
   const restored = useState(() => {
-    if (typeof window === "undefined") return { messages: [] as Msg[], memory: {} as Memory };
+    if (typeof window === "undefined") return { messages: [] as Msg[], memory: {} as ConvState };
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (!raw) return { messages: [] as Msg[], memory: {} as Memory };
-      const saved = JSON.parse(raw) as { messages?: Msg[]; memory?: Memory };
+      if (!raw) return { messages: [] as Msg[], memory: {} as ConvState };
+      const saved = JSON.parse(raw) as { messages?: Msg[]; memory?: ConvState };
       return {
         messages: Array.isArray(saved.messages) ? saved.messages.slice(-MAX_KEPT) : [],
         memory: saved.memory ?? {},
       };
     } catch {
       // Stockage indisponible (navigation privée, quota) : on démarre à vide.
-      return { messages: [] as Msg[], memory: {} as Memory };
+      return { messages: [] as Msg[], memory: {} as ConvState };
     }
   })[0];
 
@@ -65,7 +66,7 @@ export function Assistant() {
   const [busy, setBusy] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>(OPENERS);
   const [unread, setUnread] = useState(false);
-  const [memory, setMemory] = useState<Memory>(restored.memory);
+  const [memory, setMemory] = useState<ConvState>(restored.memory);
 
   const previousPath = useRef<string | undefined>(undefined);
   const scroller = useRef<HTMLDivElement>(null);
@@ -115,10 +116,14 @@ export function Assistant() {
       return !wasOpen;
     });
 
-  /** Retient ce que le visiteur donne de lui-même, sans jamais le deviner. */
+  /**
+   * Retient le prénom que le visiteur donne de lui-même — jamais deviné.
+   * Le reste (métier, pages, besoins) est extrait côté serveur par le moteur.
+   */
   const remember = useCallback((text: string) => {
     const prenom = text.match(/\b(?:je m['’]appelle|moi c['’]est|je suis)\s+([A-ZÀ-Ý][\p{L}-]{1,20})/u)?.[1];
-    if (prenom) setMemory((m) => (m.prenom ? m : { ...m, prenom }));
+    if (!prenom) return;
+    setMemory((m) => (m.slots?.prenom ? m : { ...m, slots: { ...m.slots, prenom } }));
   }, []);
 
   const send = useCallback(
@@ -143,15 +148,9 @@ export function Assistant() {
           method: "POST",
           headers: { "content-type": "application/json" },
           signal: controller.signal,
-          body: JSON.stringify({
-            messages: next.slice(-12),
-            page: {
-              path: pathname,
-              title: typeof document !== "undefined" ? document.title : undefined,
-              previousPath: previousPath.current,
-            },
-            memory,
-          }),
+          // Le serveur est sans mémoire : l'état de la conversation fait
+          // l'aller-retour avec chaque message.
+          body: JSON.stringify({ message: text, state: memory, page: { path: pathname } }),
         });
 
         if (!res.ok || !res.body) throw new Error(String(res.status));
@@ -161,7 +160,13 @@ export function Assistant() {
         let buffer = "";
         let answer = "";
 
-        const apply = (payload: { type: string; v?: string; navigate?: string | null; suggestions?: string[] }) => {
+        const apply = (payload: {
+          type: string;
+          v?: string;
+          navigate?: string | null;
+          suggestions?: string[];
+          state?: ConvState;
+        }) => {
           if (payload.type === "text" && payload.v) {
             answer += payload.v;
             setMessages((prev) => {
@@ -177,6 +182,7 @@ export function Assistant() {
               return copy;
             });
           } else if (payload.type === "actions") {
+            if (payload.state) setMemory(payload.state);
             if (payload.suggestions?.length) setSuggestions(payload.suggestions);
             if (payload.navigate && payload.navigate !== pathname) {
               // Petit délai : le visiteur voit la réponse avant que la page change.
