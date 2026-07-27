@@ -257,7 +257,7 @@ export function Assistant() {
         onClick={toggle}
         aria-label={open ? "Fermer l'assistant Vanyo" : "Ouvrir l'assistant Vanyo"}
         aria-expanded={open}
-        className="fixed bottom-5 right-5 z-[70] grid h-14 w-14 place-items-center rounded-full border border-vanyo-500/40 bg-vanyo-500/15 text-white shadow-lg backdrop-blur-xl transition hover:scale-105 hover:bg-vanyo-500/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vanyo-500 sm:bottom-6 sm:right-6"
+        className="fixed bottom-5 right-5 z-[9995] grid h-14 w-14 place-items-center rounded-full border border-vanyo-500/40 bg-vanyo-500/15 text-white shadow-lg backdrop-blur-xl transition hover:scale-105 hover:bg-vanyo-500/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vanyo-500 sm:bottom-6 sm:right-6"
       >
         {open ? <X className="h-5 w-5" /> : <MessageCircle className="h-5 w-5" />}
         {unread && !open && (
@@ -270,7 +270,7 @@ export function Assistant() {
         <div
           role="dialog"
           aria-label="Assistant Vanyo"
-          className="fixed inset-x-3 bottom-24 z-[69] flex max-h-[min(70vh,560px)] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[rgb(var(--card-rgb,17_17_24))]/95 shadow-2xl backdrop-blur-2xl sm:inset-x-auto sm:right-6 sm:w-[400px]"
+          className="fixed inset-x-3 bottom-24 z-[9992] flex max-h-[min(70vh,560px)] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[rgb(var(--card-rgb,17_17_24))]/95 shadow-2xl backdrop-blur-2xl sm:inset-x-auto sm:right-6 sm:w-[400px]"
         >
           <header className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
             <span className="grid h-8 w-8 place-items-center rounded-full bg-vanyo-500/20 text-vanyo-200">

@@ -22,7 +22,10 @@ export function PersonalizeWidget() {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="fixed bottom-5 right-5 z-[9990] sm:bottom-6 sm:right-6">
+    // Coin bas-gauche : le bas-droit est occupé par l'assistant, que les
+    // visiteurs y cherchent par habitude. Deux boutons flottants superposés
+    // au même endroit en rendraient un inatteignable.
+    <div className="fixed bottom-5 left-5 z-[9990] sm:bottom-6 sm:left-6">
       <AnimatePresence>
         {open && (
           <motion.div
@@ -30,7 +33,7 @@ export function PersonalizeWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.95 }}
             transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="glass-strong absolute bottom-16 right-0 w-[19rem] rounded-2xl p-4 shadow-2xl sm:w-80"
+            className="glass-strong absolute bottom-16 left-0 w-[19rem] rounded-2xl p-4 shadow-2xl sm:w-80"
           >
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-white">Personnalisez l'affichage</h3>

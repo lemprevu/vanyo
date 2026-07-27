@@ -4,6 +4,12 @@ const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
   },
+  // L'indicateur de développement de Next s'affiche en bas à gauche par
+  // défaut, exactement sur le bouton de personnalisation. Il n'existe qu'en
+  // local, mais il le rendait intestable pendant le développement.
+  devIndicators: {
+    position: "top-left",
+  },
   // lucide-react et motion exportent des centaines de modules depuis un seul
   // point d'entrée ; sans ça, importer une seule icône peut faire entrer
   // tout le paquet dans le bundle. Force un import "à la pièce".
