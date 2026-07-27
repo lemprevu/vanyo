@@ -14,6 +14,14 @@ import { MessageCircle, X, Send, Sparkles, RotateCcw, ArrowUpRight } from "lucid
  */
 
 type Msg = { role: "user" | "assistant"; content: string };
+
+/** Contrôle envoyé par le moteur pour la question en cours. */
+type FieldOption = { label: string; value: string };
+type Field =
+  | { kind: "choix"; key: string; options: FieldOption[]; autre?: string }
+  | { kind: "multi"; key: string; options: FieldOption[]; valider: string; aucun?: string }
+  | { kind: "nombre"; key: string; min: number; max: number; defaut: number; unite: string; passer?: string };
+type FieldAnswer = { key: string; values: string[] };
 /** Etat de conversation du moteur serveur : opaque cote client, simplement renvoye tel quel. */
 type ConvState = { mode?: string; slots?: Record<string, unknown>; posees?: string[]; tour?: number };
 
@@ -66,6 +74,7 @@ export function Assistant() {
   const [busy, setBusy] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>(OPENERS);
   const [unread, setUnread] = useState(false);
+  const [field, setField] = useState<Field | null>(null);
   const [memory, setMemory] = useState<ConvState>(restored.memory);
 
   const previousPath = useRef<string | undefined>(undefined);
@@ -127,7 +136,7 @@ export function Assistant() {
   }, []);
 
   const send = useCallback(
-    async (raw: string) => {
+    async (raw: string, answer?: FieldAnswer) => {
       const text = raw.trim();
       if (!text || busy) return;
 
@@ -138,6 +147,7 @@ export function Assistant() {
       remember(text);
       setInput("");
       setSuggestions([]);
+      setField(null);
       setBusy(true);
 
       const next: Msg[] = [...messages, { role: "user", content: text }];
@@ -150,7 +160,7 @@ export function Assistant() {
           signal: controller.signal,
           // Le serveur est sans mémoire : l'état de la conversation fait
           // l'aller-retour avec chaque message.
-          body: JSON.stringify({ message: text, state: memory, page: { path: pathname } }),
+          body: JSON.stringify({ message: text, answer, state: memory, page: { path: pathname } }),
         });
 
         if (!res.ok || !res.body) throw new Error(String(res.status));
@@ -158,31 +168,33 @@ export function Assistant() {
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
-        let answer = "";
+        let texteRecu = "";
 
         const apply = (payload: {
           type: string;
           v?: string;
           navigate?: string | null;
           suggestions?: string[];
+          field?: Field | null;
           state?: ConvState;
         }) => {
           if (payload.type === "text" && payload.v) {
-            answer += payload.v;
+            texteRecu += payload.v;
             setMessages((prev) => {
               const copy = [...prev];
-              copy[copy.length - 1] = { role: "assistant", content: answer };
+              copy[copy.length - 1] = { role: "assistant", content: texteRecu };
               return copy;
             });
           } else if (payload.type === "error" && payload.v) {
-            answer = payload.v;
+            texteRecu = payload.v;
             setMessages((prev) => {
               const copy = [...prev];
-              copy[copy.length - 1] = { role: "assistant", content: answer };
+              copy[copy.length - 1] = { role: "assistant", content: texteRecu };
               return copy;
             });
           } else if (payload.type === "actions") {
             if (payload.state) setMemory(payload.state);
+            if (payload.field) setField(payload.field);
             if (payload.suggestions?.length) setSuggestions(payload.suggestions);
             if (payload.navigate && payload.navigate !== pathname) {
               // Petit délai : le visiteur voit la réponse avant que la page change.
@@ -209,7 +221,7 @@ export function Assistant() {
           }
         }
 
-        if (!answer) {
+        if (!texteRecu) {
           setMessages((prev) => {
             const copy = [...prev];
             copy[copy.length - 1] = {
@@ -242,6 +254,7 @@ export function Assistant() {
     setMessages([]);
     setMemory({});
     setSuggestions(OPENERS);
+    setField(null);
     setBusy(false);
   };
 
@@ -306,16 +319,30 @@ export function Assistant() {
                   className={
                     m.role === "user"
                       ? "max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-vanyo-500/25 px-3.5 py-2.5 text-sm leading-relaxed text-white"
-                      : "max-w-[90%] whitespace-pre-wrap rounded-2xl rounded-bl-sm bg-white/8 px-3.5 py-2.5 text-sm leading-relaxed text-white/85"
+                      : "max-w-[92%] whitespace-pre-wrap rounded-2xl rounded-bl-sm bg-white/8 px-3.5 py-2.5 text-sm leading-relaxed text-white/85"
                   }
                 >
                   {m.content || (busy && i === shown.length - 1 ? <TypingDots /> : null)}
+
+                  {/* Le formulaire s'affiche dans la bulle de la question,
+                      juste sous le texte : le visiteur n'a pas à chercher où
+                      répondre. */}
+                  {field && !busy && m.role === "assistant" && i === shown.length - 1 && (
+                    <InlineField
+                      key={`${field.key}-${shown.length}`}
+                      field={field}
+                      onAnswer={(label, answer) => send(label, answer)}
+                    />
+                  )}
                 </div>
               </div>
             ))}
           </div>
 
-          {suggestions.length > 0 && !busy && (
+          {/* Les suggestions libres sont masquées tant qu'un formulaire est
+              ouvert : deux jeux de boutons côte à côte brouilleraient
+              l'action attendue. */}
+          {suggestions.length > 0 && !busy && !field && (
             <div className="flex flex-wrap gap-1.5 px-4 pb-2">
               {suggestions.map((s) => (
                 <button
@@ -366,6 +393,158 @@ export function Assistant() {
         </div>
       )}
     </>
+  );
+}
+
+/**
+ * Le formulaire intégré à la bulle.
+ *
+ * Chaque question de l'entretien s'accompagne du contrôle qui va bien :
+ * une liste de choix, une sélection multiple ou un compteur. Le visiteur
+ * répond d'un clic — plus rien à taper, donc plus de faute de frappe, plus
+ * d'hésitation sur la formulation, et beaucoup moins d'abandons.
+ *
+ * Le champ de saisie reste disponible : celui qui préfère écrire le peut.
+ */
+function InlineField({
+  field,
+  onAnswer,
+}: {
+  field: Field;
+  onAnswer: (label: string, answer: FieldAnswer) => void;
+}) {
+  const [selection, setSelection] = useState<string[]>([]);
+  const [nombre, setNombre] = useState(field.kind === "nombre" ? field.defaut : 0);
+
+  if (field.kind === "choix") {
+    return (
+      <div className="mt-2 flex flex-col gap-1.5">
+        {field.options.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            onClick={() => onAnswer(o.label, { key: field.key, values: [o.value] })}
+            className="rounded-xl border border-white/12 bg-white/5 px-3 py-2 text-left text-[13px] text-white/80 transition hover:border-vanyo-500/50 hover:bg-vanyo-500/12 hover:text-white"
+          >
+            {o.label}
+          </button>
+        ))}
+        {field.autre && (
+          <p className="px-1 pt-0.5 text-[11px] text-white/35">
+            {field.autre} — écrivez-le simplement ci-dessous.
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  if (field.kind === "multi") {
+    const bascule = (v: string) =>
+      setSelection((s) => (s.includes(v) ? s.filter((x) => x !== v) : [...s, v]));
+
+    return (
+      <div className="mt-2">
+        <div className="flex flex-wrap gap-1.5">
+          {field.options.map((o) => {
+            const actif = selection.includes(o.value);
+            return (
+              <button
+                key={o.value}
+                type="button"
+                aria-pressed={actif}
+                onClick={() => bascule(o.value)}
+                className={`rounded-full border px-2.5 py-1 text-[12px] transition ${
+                  actif
+                    ? "border-vanyo-500/60 bg-vanyo-500/25 text-white"
+                    : "border-white/12 bg-white/5 text-white/70 hover:border-white/30"
+                }`}
+              >
+                {actif ? "✓ " : ""}
+                {o.label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-2 flex items-center gap-2">
+          <button
+            type="button"
+            disabled={selection.length === 0}
+            onClick={() =>
+              onAnswer(
+                field.options
+                  .filter((o) => selection.includes(o.value))
+                  .map((o) => o.label)
+                  .join(", "),
+                { key: field.key, values: selection },
+              )
+            }
+            className="rounded-xl border border-vanyo-500/40 bg-vanyo-500/20 px-3 py-1.5 text-[12px] text-white transition hover:bg-vanyo-500/30 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {field.valider}
+            {selection.length > 0 ? ` (${selection.length})` : ""}
+          </button>
+          {field.aucun && (
+            <button
+              type="button"
+              onClick={() => onAnswer(field.aucun as string, { key: field.key, values: [] })}
+              className="text-[12px] text-white/45 underline-offset-2 transition hover:text-white/80 hover:underline"
+            >
+              {field.aucun}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Compteur
+  const borne = (n: number) => Math.min(field.max, Math.max(field.min, n));
+  return (
+    <div className="mt-2 flex items-center gap-2">
+      <div className="flex items-center gap-1 rounded-xl border border-white/12 bg-white/5 p-1">
+        <button
+          type="button"
+          aria-label="Moins"
+          onClick={() => setNombre((n) => borne(n - 1))}
+          className="grid h-7 w-7 place-items-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
+        >
+          −
+        </button>
+        <span className="min-w-[4.5rem] text-center text-[13px] text-white">
+          {nombre} {field.unite}
+          {nombre > 1 ? "s" : ""}
+        </span>
+        <button
+          type="button"
+          aria-label="Plus"
+          onClick={() => setNombre((n) => borne(n + 1))}
+          className="grid h-7 w-7 place-items-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
+        >
+          +
+        </button>
+      </div>
+      <button
+        type="button"
+        onClick={() =>
+          onAnswer(`${nombre} ${field.unite}${nombre > 1 ? "s" : ""}`, {
+            key: field.key,
+            values: [String(nombre)],
+          })
+        }
+        className="rounded-xl border border-vanyo-500/40 bg-vanyo-500/20 px-3 py-1.5 text-[12px] text-white transition hover:bg-vanyo-500/30"
+      >
+        Valider
+      </button>
+      {field.passer && (
+        <button
+          type="button"
+          onClick={() => onAnswer(field.passer as string, { key: field.key, values: [] })}
+          className="text-[12px] text-white/45 underline-offset-2 transition hover:text-white/80 hover:underline"
+        >
+          {field.passer}
+        </button>
+      )}
+    </div>
   );
 }
 

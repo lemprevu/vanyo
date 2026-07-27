@@ -43,16 +43,51 @@ export type DialogueState = {
   slots: Slots;
   /** Questions déjà posées, pour ne jamais les reposer. */
   posees: string[];
+  /**
+   * Questions auxquelles le visiteur a répondu — y compris « aucun », qui est
+   * une réponse valable mais laisse le créneau vide. Sans ce suivi, on
+   * reposerait indéfiniment une question à laquelle il a déjà dit non.
+   */
+  repondues: string[];
   /** Nombre d'échanges, sert à varier les formulations. */
   tour: number;
 };
 
-export const initialState = (): DialogueState => ({ mode: "libre", slots: {}, posees: [], tour: 0 });
+export const initialState = (): DialogueState => ({
+  mode: "libre",
+  slots: {},
+  posees: [],
+  repondues: [],
+  tour: 0,
+});
+
+/* ------------------------------------------------------------------ */
+/*  Formulaire intégré au chat                                         */
+/* ------------------------------------------------------------------ */
+
+export type FieldOption = { label: string; value: string };
+
+/**
+ * Description du contrôle à afficher sous la question, dans la bulle.
+ *
+ * Taper « je suis coiffeuse » marche toujours ; mais proposer les réponses
+ * en un clic supprime la faute de frappe, l'hésitation et l'abandon — c'est
+ * ce qui fait la différence entre un chat et un vrai entonnoir de devis.
+ */
+export type Field =
+  | { kind: "choix"; key: string; options: FieldOption[]; autre?: string }
+  | { kind: "multi"; key: string; options: FieldOption[]; valider: string; aucun?: string }
+  | { kind: "nombre"; key: string; min: number; max: number; defaut: number; unite: string; passer?: string };
+
+/** Réponse renvoyée par le formulaire : structurée, donc jamais mal interprétée. */
+export type FieldAnswer = { key: string; values: string[] };
 
 export type Reply = {
   text: string;
   navigate: string | null;
   suggestions: string[];
+  /** Contrôle à afficher sous la réponse, quand une question est en cours. */
+  field?: Field | null;
   state: DialogueState;
 };
 
@@ -123,7 +158,38 @@ type Question = {
   key: keyof Slots;
   ask: (s: DialogueState) => string;
   suggestions: string[];
+  /** Le contrôle affiché sous la question. Dérivé du catalogue quand il le faut. */
+  field: (catalog: Catalog) => Field;
 };
+
+/**
+ * Secteurs proposés en un clic. Les valeurs sont exactement celles que le
+ * moteur de compréhension produit à partir d'une réponse tapée : cliquer ou
+ * écrire aboutit donc au même état, et au même chiffrage.
+ */
+const METIERS_COURANTS: FieldOption[] = [
+  { label: "Restaurant, café", value: "restaurant" },
+  { label: "Commerce, boutique", value: "commerce" },
+  { label: "Artisan, BTP", value: "artisan" },
+  { label: "Santé, bien-être", value: "praticien" },
+  { label: "Salon de beauté", value: "salon de beauté" },
+  { label: "Immobilier", value: "agence immobilière" },
+  { label: "Profession libérale", value: "profession libérale" },
+  { label: "Photographe, créatif", value: "photographe" },
+  { label: "Association, club", value: "association" },
+  { label: "Entreprise, services", value: "entreprise de services" },
+];
+
+/** Besoins proposés à la sélection multiple, libellés tirés du catalogue. */
+function besoinsOptions(catalog: Catalog): FieldOption[] {
+  const cles = ["contact", "galerie", "rdv", "reservation", "boutique", "paiement", "blog", "avis", "admin", "seo_local"];
+  return cles
+    .map((k) => {
+      const m = catalog.modules.find((x) => x.key === k);
+      return m ? { label: m.label, value: m.key } : null;
+    })
+    .filter((x): x is FieldOption => x !== null);
+}
 
 /**
  * L'ordre compte : on demande d'abord ce qui pèse le plus dans le chiffrage,
@@ -140,6 +206,7 @@ const QUESTIONS: Question[] = [
         "Parfait. Quel est votre métier ou votre secteur ?",
       ),
     suggestions: ["Restaurant", "Artisan", "Commerce en ligne"],
+    field: () => ({ kind: "choix", key: "metier", options: METIERS_COURANTS, autre: "Autre — je précise" }),
   },
   {
     key: "siteExistant",
@@ -150,6 +217,14 @@ const QUESTIONS: Question[] = [
         "Est-ce que vous partez de zéro, ou vous avez déjà un site à refaire ?",
       ),
     suggestions: ["Je pars de zéro", "J'ai déjà un site"],
+    field: () => ({
+      kind: "choix",
+      key: "siteExistant",
+      options: [
+        { label: "Je pars de zéro", value: "non" },
+        { label: "J'ai déjà un site à refaire", value: "oui" },
+      ],
+    }),
   },
   {
     key: "besoins",
@@ -160,6 +235,13 @@ const QUESTIONS: Question[] = [
         "De quoi avez-vous besoin sur le site : vendre, recevoir des demandes, prendre des rendez-vous, montrer vos réalisations ?",
       ),
     suggestions: ["Vendre en ligne", "Recevoir des demandes", "Prendre des rendez-vous"],
+    field: (catalog) => ({
+      kind: "multi",
+      key: "besoins",
+      options: besoinsOptions(catalog),
+      valider: "Continuer",
+      aucun: "Je ne sais pas encore",
+    }),
   },
   {
     key: "pages",
@@ -170,6 +252,15 @@ const QUESTIONS: Question[] = [
         "Combien de pages environ ? Pas besoin d'être précis à ce stade.",
       ),
     suggestions: ["3 pages", "5 pages", "Je ne sais pas"],
+    field: () => ({
+      kind: "nombre",
+      key: "pages",
+      min: 1,
+      max: 20,
+      defaut: 5,
+      unite: "page",
+      passer: "Je ne sais pas",
+    }),
   },
 ];
 
@@ -177,7 +268,7 @@ const QUESTIONS: Question[] = [
 function pendingQuestion(state: DialogueState): Question | null {
   for (let i = state.posees.length - 1; i >= 0; i--) {
     const q = QUESTIONS.find((x) => x.key === state.posees[i]);
-    if (!q) continue;
+    if (!q || state.repondues.includes(q.key)) continue;
     const v = state.slots[q.key];
     if (v === undefined || (Array.isArray(v) && v.length === 0)) return q;
   }
@@ -187,7 +278,7 @@ function pendingQuestion(state: DialogueState): Question | null {
 /** La prochaine information manquante, ou `null` si on peut conseiller. */
 function nextQuestion(state: DialogueState): Question | null {
   for (const q of QUESTIONS) {
-    if (state.posees.includes(q.key)) continue;
+    if (state.posees.includes(q.key) || state.repondues.includes(q.key)) continue;
     const v = state.slots[q.key];
     if (v === undefined || (Array.isArray(v) && v.length === 0)) return q;
   }
@@ -230,19 +321,19 @@ function recommend(state: DialogueState, catalog: Catalog): Reply {
       `D'après ce que vous m'avez décrit${contexte}, on est sur du sur-mesure : le chiffrage se fait après un échange, ` +
       `parce que le périmètre change beaucoup le résultat. Le formulaire de devis prend deux minutes et me donne tout ce qu'il faut pour vous répondre précisément.`;
   } else {
-    const detail: string[] = [];
-    if (s.pages) detail.push(`${s.pages} page${s.pages > 1 ? "s" : ""}`);
-    if (s.besoins?.length) {
-      const labels = s.besoins
-        .map((k) => catalog.modules.find((mm) => mm.key === k)?.label.toLowerCase())
-        .filter((x): x is string => Boolean(x))
-        .slice(0, 3);
-      if (labels.length) detail.push(enumerate(labels));
-    }
+    // Pages et fonctionnalités sont deux natures différentes : les enchaîner
+    // dans la même énumération donnait « 7 pages et X et Y ».
+    const labels = (s.besoins ?? [])
+      .map((k) => catalog.modules.find((mm) => mm.key === k)?.label.toLowerCase())
+      .filter((x): x is string => Boolean(x))
+      .slice(0, 3);
+
+    let detail = s.pages ? `${s.pages} page${s.pages > 1 ? "s" : ""}` : "";
+    if (labels.length) detail += `${detail ? ", avec " : ""}${enumerate(labels)}`;
 
     text =
       `Sur cette base${contexte}, la formule ${pack.name} correspond bien` +
-      (detail.length ? ` : ${enumerate(detail)}` : "") +
+      (detail ? ` : ${detail}` : "") +
       `. Comptez autour de ${eur(est.total)}` +
       (est.monthly > 0 ? `, plus ${eur(est.monthly)} par mois de maintenance` : "") +
       `, livré en ${pack.delai.toLowerCase()}.` +
@@ -546,15 +637,23 @@ export function respond({
   catalog,
   index,
   path,
+  answer,
 }: {
   analysis: Analysis;
   state: DialogueState;
   catalog: Catalog;
   index: SearchIndex;
   path?: string;
+  /** Réponse issue du formulaire intégré, quand le visiteur a cliqué. */
+  answer?: FieldAnswer | null;
 }): Reply {
   const tour = state.tour + 1;
-  const next: DialogueState = { ...state, tour, slots: { ...state.slots } };
+  const next: DialogueState = {
+    ...state,
+    tour,
+    slots: { ...state.slots },
+    repondues: [...state.repondues],
+  };
   const { intent, entities, confidence } = analysis;
 
   // Tout ce que le visiteur laisse échapper est mémorisé, quelle que soit
@@ -566,8 +665,39 @@ export function respond({
   if (entities.besoins?.length) {
     next.slots.besoins = [...new Set([...(next.slots.besoins ?? []), ...entities.besoins])];
   }
+  for (const cle of ["metier", "pages", "besoins"] as const) {
+    const v = next.slots[cle];
+    const rempli = Array.isArray(v) ? v.length > 0 : v !== undefined;
+    if (rempli && !next.repondues.includes(cle)) next.repondues.push(cle);
+  }
 
-  const wrap = (r: Omit<Reply, "state">, s: DialogueState = next): Reply => ({ ...r, state: s });
+  // Une réponse cliquée est appliquée telle quelle : pas d'interprétation,
+  // donc pas de contresens possible sur ce que le visiteur a désigné.
+  if (answer) {
+    const marquer = () => {
+      if (!next.repondues.includes(answer.key)) next.repondues.push(answer.key);
+    };
+    if (answer.key === "metier" && answer.values[0]) {
+      next.slots.metier = answer.values[0];
+      marquer();
+    } else if (answer.key === "siteExistant") {
+      next.slots.siteExistant = answer.values[0] === "oui";
+      marquer();
+    } else if (answer.key === "besoins") {
+      next.slots.besoins = [...new Set([...(next.slots.besoins ?? []), ...answer.values])];
+      marquer();
+    } else if (answer.key === "pages") {
+      const n = Number(answer.values[0]);
+      if (Number.isFinite(n) && n > 0) next.slots.pages = n;
+      marquer();
+    }
+  }
+
+  const wrap = (r: Omit<Reply, "state"> & { field?: Field | null }, s: DialogueState = next): Reply => ({
+    field: null,
+    ...r,
+    state: s,
+  });
 
   /* ── Politesse ─────────────────────────────────────────────── */
   if (intent === "salutation" && tour <= 2) {
@@ -642,14 +772,18 @@ export function respond({
         if (enAttente) r.text += `
 
 ${enAttente.ask(next)}`;
-        return wrap({ ...r, suggestions: enAttente ? enAttente.suggestions : r.suggestions });
+        return wrap({
+          ...r,
+          suggestions: enAttente ? enAttente.suggestions : r.suggestions,
+          field: enAttente ? enAttente.field(catalog) : null,
+        });
       }
     }
 
     const q = nextQuestion(next);
     if (q) {
       next.posees = [...next.posees, q.key];
-      return wrap({ text: q.ask(next), navigate: null, suggestions: q.suggestions }, next);
+      return wrap({ text: q.ask(next), navigate: null, suggestions: q.suggestions, field: q.field(catalog) }, next);
     }
     return recommend(next, catalog);
   }
@@ -660,7 +794,7 @@ ${enAttente.ask(next)}`;
     const q = nextQuestion(next);
     if (q) {
       next.posees = [...next.posees, q.key];
-      return wrap({ text: q.ask(next), navigate: null, suggestions: q.suggestions }, next);
+      return wrap({ text: q.ask(next), navigate: null, suggestions: q.suggestions, field: q.field(catalog) }, next);
     }
     return recommend(next, catalog);
   }

@@ -3,7 +3,7 @@ import { resolveCatalog } from "@/lib/catalog";
 import { buildKnowledge, PAGES } from "@/lib/ai/knowledge";
 import { buildIndex, type SearchIndex } from "@/lib/ai/retrieval";
 import { analyze } from "@/lib/ai/nlu";
-import { respond, initialState, type DialogueState } from "@/lib/ai/dialogue";
+import { respond, initialState, type DialogueState, type FieldAnswer } from "@/lib/ai/dialogue";
 import { rateLimit, clientIp } from "@/lib/rateLimit";
 
 /**
@@ -79,6 +79,9 @@ function safeState(raw: unknown): DialogueState {
     posees: Array.isArray(s.posees)
       ? s.posees.filter((p): p is string => typeof p === "string").slice(0, 10)
       : [],
+    repondues: Array.isArray(s.repondues)
+      ? s.repondues.filter((p): p is string => typeof p === "string").slice(0, 10)
+      : [],
     slots: {
       metier: str(slots.metier, 60),
       ville: str(slots.ville, 40),
@@ -91,6 +94,21 @@ function safeState(raw: unknown): DialogueState {
         : undefined,
     },
   };
+}
+
+/** Clés de créneau que le formulaire intégré a le droit de renseigner. */
+const CLES_FORMULAIRE = new Set(["metier", "siteExistant", "besoins", "pages"]);
+
+function safeAnswer(raw: unknown): FieldAnswer | null {
+  if (!raw || typeof raw !== "object") return null;
+  const a = raw as { key?: unknown; values?: unknown };
+  if (typeof a.key !== "string" || !CLES_FORMULAIRE.has(a.key)) return null;
+  if (!Array.isArray(a.values)) return null;
+  const values = a.values
+    .filter((v): v is string => typeof v === "string")
+    .slice(0, 12)
+    .map((v) => v.slice(0, 60));
+  return { key: a.key, values };
 }
 
 const sse = (payload: unknown) => `data: ${JSON.stringify(payload)}\n\n`;
@@ -109,7 +127,7 @@ export async function POST(req: Request) {
     });
   }
 
-  let body: { message?: unknown; state?: unknown; page?: { path?: unknown } };
+  let body: { message?: unknown; state?: unknown; page?: { path?: unknown }; answer?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -121,6 +139,10 @@ export async function POST(req: Request) {
     return new Response(JSON.stringify({ error: "Aucun message." }), { status: 400 });
   }
 
+  // Réponse cliquée dans le formulaire intégré. Elle vient du navigateur,
+  // donc elle est bornée comme le reste : une clé connue, des valeurs courtes.
+  const answer = safeAnswer(body.answer);
+
   const settings = await getSiteSettings();
   const overrides = settings.catalog ?? null;
 
@@ -130,6 +152,7 @@ export async function POST(req: Request) {
     catalog: resolveCatalog(overrides),
     index: getIndex(overrides),
     path: safePath(body.page?.path) ?? undefined,
+    answer,
   });
 
   const navigate = safePath(reply.navigate);
@@ -150,7 +173,13 @@ export async function POST(req: Request) {
         await new Promise((r) => setTimeout(r, /[.!?…]\s*$/.test(part) ? 90 : 28));
       }
 
-      send({ type: "actions", navigate, suggestions: reply.suggestions, state: reply.state });
+      send({
+        type: "actions",
+        navigate,
+        suggestions: reply.suggestions,
+        field: reply.field ?? null,
+        state: reply.state,
+      });
       send({ type: "done" });
       controller.close();
     },
