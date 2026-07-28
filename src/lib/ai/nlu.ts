@@ -448,7 +448,12 @@ export type Analysis = {
   /** Le texte normalisé, réutilisable par le moteur de dialogue. */
   normalized: string;
   words: string[];
+  /** La correction apprise qui a emporté la décision, le cas échéant. */
+  lesson?: string;
 };
+
+/** Une formulation rattachée à une intention, saisie depuis le panel. */
+export type Lesson = { phrase: string; intent: Intent };
 
 export type Entities = {
   /** Secteur d'activité reconnu (« restaurant », « immobilier »…). */
@@ -570,9 +575,15 @@ const SERVICE_TO_INTENT: Record<string, Intent> = {
   refonte: "refonte",
 };
 
-export function analyze(text: string): Analysis {
+/**
+ * `lessons` : les corrections saisies dans le panel après coup. Une
+ * formulation qui correspond emporte la décision, et c'est bien le but :
+ * ce qui a été corrigé une fois ne doit plus jamais être mal compris.
+ */
+export function analyze(text: string, lessons: Lesson[] = []): Analysis {
   const raw = normalize(text);
   const words = expandAbbreviations(raw.split(" ").filter(Boolean));
+  const normalise = words.join(" ");
 
   const scores = new Map<Intent, number>();
   const bump = (i: Intent, n: number) => scores.set(i, (scores.get(i) ?? 0) + n);
@@ -600,7 +611,7 @@ export function analyze(text: string): Analysis {
   const top = ranked[0];
   const total = ranked.reduce((s, [, v]) => s + v, 0);
 
-  return {
+  const base: Analysis = {
     intent: top ? top[0] : "inconnu",
     // La confiance mesure autant le score absolu que l'écart avec le suivant.
     confidence: top ? Math.min(1, (top[1] / 10) * 0.6 + (top[1] / Math.max(1, total)) * 0.4) : 0,
@@ -608,7 +619,24 @@ export function analyze(text: string): Analysis {
     entities: extract(words, raw),
     // La forme développée sert aussi au repli documentaire : la recherche
     // profite ainsi de la même traduction du langage SMS.
-    normalized: words.join(" "),
+    normalized: normalise,
     words,
   };
+
+  // Les corrections passent en dernier et écrasent le verdict : elles ont été
+  // saisies précisément parce que le classement automatique s'était trompé.
+  // La correspondance exacte prime sur l'inclusion, pour qu'une leçon courte
+  // ne capture pas toutes les questions qui la contiennent par hasard.
+  const exacte = lessons.find((l) => l.phrase === normalise);
+  const partielle =
+    exacte ??
+    lessons
+      .filter((l) => l.phrase.length >= 8 && normalise.includes(l.phrase))
+      .sort((a, b) => b.phrase.length - a.phrase.length)[0];
+
+  if (partielle) {
+    return { ...base, intent: partielle.intent, confidence: 1, lesson: partielle.phrase };
+  }
+
+  return base;
 }

@@ -21,6 +21,7 @@ import { CITIES } from "@/lib/cities";
 import { search, type SearchIndex } from "./retrieval";
 import { PAGES } from "./knowledge";
 import type { Analysis, Entities, Intent } from "./nlu";
+import type { Source } from "./learning";
 
 /* ------------------------------------------------------------------ */
 /*  État de la conversation                                            */
@@ -100,6 +101,11 @@ export type Reply = {
   suggestions: string[];
   /** Contrôle à afficher sous la réponse, quand une question est en cours. */
   field?: Field | null;
+  /**
+   * Comment la réponse a été trouvée. Journalisée pour repérer ce que
+   * l'assistant ne comprend pas — voir lib/ai/learning.ts.
+   */
+  source?: Source;
   state: DialogueState;
 };
 
@@ -357,6 +363,7 @@ function recommend(state: DialogueState, catalog: Catalog): Reply {
     text,
     navigate: null,
     suggestions: ["Faire mon devis", "Qu'est-ce qui est compris ?", "Vos délais"],
+    source: "entretien",
     state: { ...state, mode: "conseil_donne" },
   };
 }
@@ -938,8 +945,15 @@ export function respond({
     }
   }
 
-  const wrap = (r: Omit<Reply, "state"> & { field?: Field | null }, s: DialogueState = next): Reply => ({
+  // Provenance de la réponse, journalisée pour repérer ce qui échoue.
+  // « intention » est le cas nominal ; les branches qui font autrement le
+  // disent explicitement.
+  const wrap = (
+    r: Omit<Reply, "state"> & { field?: Field | null; source?: Source },
+    s: DialogueState = next,
+  ): Reply => ({
     field: null,
+    source: "intention",
     ...r,
     state: s,
   });
@@ -1028,7 +1042,7 @@ ${enAttente.ask(next)}`;
     const q = nextQuestion(next);
     if (q) {
       next.posees = [...next.posees, q.key];
-      return wrap({ text: q.ask(next), navigate: null, suggestions: q.suggestions, field: q.field(catalog) }, next);
+      return wrap({ text: q.ask(next), navigate: null, suggestions: q.suggestions, field: q.field(catalog), source: "entretien" }, next);
     }
     return recommend(next, catalog);
   }
@@ -1039,7 +1053,7 @@ ${enAttente.ask(next)}`;
     const q = nextQuestion(next);
     if (q) {
       next.posees = [...next.posees, q.key];
-      return wrap({ text: q.ask(next), navigate: null, suggestions: q.suggestions, field: q.field(catalog) }, next);
+      return wrap({ text: q.ask(next), navigate: null, suggestions: q.suggestions, field: q.field(catalog), source: "entretien" }, next);
     }
     return recommend(next, catalog);
   }
@@ -1055,12 +1069,15 @@ ${enAttente.ask(next)}`;
   const contexte = [next.slots.metier ?? "", path ?? ""].join(" ");
   const hits = search(index, analysis.normalized, { limit: 3, context: contexte });
 
-  if (hits.length > 0 && hits[0].score > 1.2) {
+  // Seuil volontairement haut : sous ce niveau, la correspondance tient à
+  // un mot commun et la réponse serait hors sujet. Mieux vaut avouer.
+  if (hits.length > 0 && hits[0].score > 2.2) {
     const top = hits[0].chunk;
     return wrap({
       text: `${condense(top.text)}${top.url !== "/" ? `\n\nLe détail est sur la page ${top.url}.` : ""}`,
       navigate: null,
       suggestions: ["Je veux un site", "Combien ça coûte ?", "Vous contacter"],
+      source: "recherche",
     });
   }
 
@@ -1072,6 +1089,7 @@ ${enAttente.ask(next)}`;
       `Sinon, je sais tout dire sur les tarifs, les délais, les fonctionnalités et le déroulement d'un projet.`,
     navigate: null,
     suggestions: ["Vous contacter", "Combien ça coûte ?", "Vos délais"],
+    source: "echec",
   });
 }
 

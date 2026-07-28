@@ -5,6 +5,7 @@ import { buildIndex, type SearchIndex } from "@/lib/ai/retrieval";
 import { analyze } from "@/lib/ai/nlu";
 import { respond, initialState, type DialogueState, type FieldAnswer } from "@/lib/ai/dialogue";
 import { rateLimit, clientIp } from "@/lib/rateLimit";
+import { getLessons, logQuestion, markLessonUsed } from "@/lib/ai/learning";
 
 /**
  * Assistant Vanyo — moteur intégral, hébergé chez vous.
@@ -146,8 +147,14 @@ export async function POST(req: Request) {
   const settings = await getSiteSettings();
   const overrides = settings.catalog ?? null;
 
+  // Les corrections saisies dans le panel priment sur le classement
+  // automatique : ce qui a été corrigé une fois ne doit plus jamais être mal
+  // compris. La lecture est mise en cache une minute.
+  const lessons = await getLessons();
+  const analysis = analyze(message, lessons);
+
   const reply = respond({
-    analysis: analyze(message),
+    analysis,
     state: safeState(body.state),
     catalog: resolveCatalog(overrides),
     index: getIndex(overrides),
@@ -156,6 +163,18 @@ export async function POST(req: Request) {
   });
 
   const navigate = safePath(reply.navigate);
+
+  // Journalisation en arrière-plan : la réponse ne doit jamais attendre
+  // écriture, ni échouer si la base est indisponible.
+  void logQuestion({
+    question: message,
+    normalized: analysis.normalized,
+    intent: analysis.intent,
+    confidence: analysis.confidence,
+    source: reply.source ?? "intention",
+    page: safePath(body.page?.path) ?? undefined,
+  });
+  if (analysis.lesson) void markLessonUsed(analysis.lesson);
 
   /* ── Diffusion progressive ─────────────────────────────────── */
   const encoder = new TextEncoder();

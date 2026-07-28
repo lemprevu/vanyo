@@ -11,6 +11,7 @@ import {
 import { RotateCcw } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { LogoMark } from "@/components/Logo";
+import { Brain } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { PanelThemeProvider } from "@/lib/panel-theme";
 import { PanelAppearance } from "@/components/admin/PanelAppearance";
@@ -27,6 +28,7 @@ export const NAV: NavItem[] = [
   { label: "Avis", seg: "/avis", icon: Star },
   { label: "Codes promo", seg: "/codes-promo", icon: Ticket },
   { label: "Utilisateurs", seg: "/utilisateurs", icon: Users },
+  { label: "Assistant IA", seg: "/assistant", icon: Brain },
   { label: "Journal d'activité", seg: "/journal", icon: ScrollText },
   { label: "Signature email", seg: "/signature", icon: Mail },
   { label: "Paramètres", seg: "/parametres", icon: Settings },

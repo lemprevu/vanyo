@@ -362,11 +362,15 @@ export function buildKnowledge(overrides?: CatalogOverrides | null): Chunk[] {
   for (const [i, f] of FAQ.entries()) {
     add({
       id: `faq-${i}`,
+      // La question sert de titre — elle est déjà fortement pondérée à
+      // l'indexation. L'inscrire aussi dans le corps sous un habillage
+      // (« Question fréquente : … ») faisait ressortir TOUTES les entrées de
+      // la FAQ dès que le mot « question » apparaissait quelque part.
       title: f.question,
       url: "/faq",
       section: "FAQ",
-      text: `Question fréquente : « ${f.question} » — Réponse : ${f.answer}`,
-      keywords: ["faq", "question"],
+      text: f.answer,
+      keywords: [],
     });
   }
 
