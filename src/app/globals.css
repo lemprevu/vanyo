@@ -348,3 +348,30 @@ body {
 .to-violet-hi\/15 { --tw-gradient-to: rgba(var(--accent-hi-rgb), 0.15); }
 .to-violet-hi\/30 { --tw-gradient-to: rgba(var(--accent-hi-rgb), 0.30); }
 .via-violet-mid\/25 { --tw-gradient-via: rgba(var(--accent-mid-rgb), 0.25); }
+
+/* ------------------------------------------------------------------ */
+/*  Assistant : apparition des bulles                                  */
+/* ------------------------------------------------------------------ */
+
+/* Chaque message entre en fondu depuis le bas. Sans ça, l'ajout d'une
+   bulle est un saut sec au milieu d'un panneau qui, lui, défile en douceur. */
+@keyframes vanyo-bulle {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.assistant-bulle {
+  animation: vanyo-bulle 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant-bulle {
+    animation: none;
+  }
+}

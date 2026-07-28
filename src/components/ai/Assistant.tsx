@@ -16,7 +16,7 @@ import { MessageCircle, X, Send, Sparkles, RotateCcw, ArrowUpRight } from "lucid
 type Msg = { role: "user" | "assistant"; content: string };
 
 /** Contrôle envoyé par le moteur pour la question en cours. */
-type FieldOption = { label: string; value: string };
+type FieldOption = { label: string; value: string; message?: string };
 type Field =
   | { kind: "choix"; key: string; options: FieldOption[]; autre?: string }
   | { kind: "multi"; key: string; options: FieldOption[]; valider: string; aucun?: string }
@@ -29,9 +29,9 @@ const STORAGE_KEY = "vanyo-assistant-v2";
 const MAX_KEPT = 24;
 
 const OPENERS = [
+  "Je veux un site",
   "Combien coûte un site ?",
-  "Montrez-moi vos réalisations",
-  "Quels sont vos délais ?",
+  "Que sais-tu faire ?",
 ];
 
 /** Message d'accueil, adapté à la page consultée. */
@@ -79,6 +79,11 @@ export function Assistant() {
 
   const previousPath = useRef<string | undefined>(undefined);
   const scroller = useRef<HTMLDivElement>(null);
+  /** La dernière bulle de l'assistant, pour l'amener en haut de la fenêtre. */
+  const derniereBulle = useRef<HTMLDivElement>(null);
+  const animation = useRef<number | null>(null);
+  /** Vide reserve sous le dernier message, pour quil puisse atteindre le haut. */
+  const espaceur = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abort = useRef<AbortController | null>(null);
 
@@ -98,11 +103,85 @@ export function Assistant() {
     };
   }, [pathname]);
 
-  /* ── Défilement automatique ──────────────────────────────── */
+  /**
+   * Défilement.
+   *
+   * Le réflexe habituel — coller au bas de la conversation — est le mauvais
+   * ici : une réponse longue, ou suivie d'une liste de choix, arrive alors
+   * déjà à moitié sortie par le haut, et le visiteur en rate le début.
+   *
+   * On amène donc le HAUT de la dernière bulle en haut de la zone visible et
+   * on l'y laisse : la réponse se lit de la première ligne à la dernière.
+   * Sauf si tout tient à l'écran, auquel cas il n'y a rien à faire.
+   */
+  const calerEnHaut = useCallback(() => {
+    const zone = scroller.current;
+    const bulle = derniereBulle.current;
+    if (!zone || !bulle) return;
+
+    // Sans espace après le dernier message, celui-ci ne peut pas remonter
+    // plus haut que ce que le contenu autorise : sur une réponse courte, il
+    // reste collé en bas. On réserve donc juste ce qu'il faut de vide en
+    // dessous pour qu'il puisse toujours atteindre le haut.
+    const espace = espaceur.current;
+    if (espace) {
+      const requis = Math.max(0, zone.clientHeight - bulle.offsetHeight - 24);
+      if (espace.offsetHeight !== requis) espace.style.height = `${requis}px`;
+    }
+
+    const debordement = zone.scrollHeight - zone.clientHeight;
+    if (debordement <= 0) return;
+
+    // Position mesurée à l'écran plutôt que via `offsetTop` : ce dernier se
+    // compte depuis le premier ancêtre positionné, qui est le panneau et non
+    // la zone de défilement — la hauteur de l'en-tête venait donc fausser le
+    // calcul d'exactement autant de pixels.
+    const haut = bulle.getBoundingClientRect().top - zone.getBoundingClientRect().top + zone.scrollTop;
+    const cible = Math.min(Math.max(0, haut - 12), debordement);
+    if (Math.abs(zone.scrollTop - cible) < 2) return;
+
+    const doux = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    try {
+      zone.scrollTo({ top: cible, behavior: doux ? "smooth" : "auto" });
+    } catch {
+      zone.scrollTop = cible;
+    }
+
+    // Garde-fou : le défilement animé est piloté par le compositeur, qui ne
+    // tourne pas dans un onglet en arrière-plan ni dans certains aperçus
+    // intégrés. Si rien n'a bougé, on repositionne sèchement — mieux vaut un
+    // saut qu'une réponse dont le début reste hors champ.
+    window.setTimeout(() => {
+      if (Math.abs(zone.scrollTop - cible) > 8) zone.scrollTop = cible;
+    }, 420);
+  }, []);
+
   useEffect(() => {
-    const el = scroller.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [messages, busy, open]);
+    if (!open) return;
+
+    // Après la peinture, mais sans dépendre de la composition d'une image.
+    const t = window.setTimeout(calerEnHaut, 30);
+
+    // La bulle continue de grandir après ce premier calage : le texte se
+    // déroule, puis les boutons du formulaire apparaissent. Un calcul fait à
+    // un instant fixe serait donc toujours périmé pour les réponses longues.
+    // On suit la taille réelle et on recale à chaque changement.
+    const bulle = derniereBulle.current;
+    if (!bulle || typeof ResizeObserver === "undefined") return () => clearTimeout(t);
+
+    let attente: number | null = null;
+    const observateur = new ResizeObserver(() => {
+      if (attente) clearTimeout(attente);
+      attente = window.setTimeout(calerEnHaut, 60);
+    });
+    observateur.observe(bulle);
+
+    return () => {
+      clearTimeout(t);
+      if (attente) clearTimeout(attente);
+      observateur.disconnect();
+    };
+  }, [messages.length, field, open, calerEnHaut]);
 
   /* ── Fermeture au clavier ────────────────────────────────── */
   useEffect(() => {
@@ -135,12 +214,61 @@ export function Assistant() {
     setMemory((m) => (m.slots?.prenom ? m : { ...m, slots: { ...m.slots, prenom } }));
   }, []);
 
+  /**
+   * Écrit la réponse progressivement.
+   *
+   * Le moteur répond en une milliseconde ; afficher le pavé d'un coup fait
+   * brutal, et rythmer l'envoi côté serveur donnait un texte saccadé, au
+   * rythme du réseau. On reçoit donc tout d'un bloc et on le déroule ici,
+   * calé sur l'horloge d'affichage : c'est régulier quoi qu'il arrive.
+   */
+  const derouler = useCallback((texte: string) => {
+    return new Promise<void>((resolve) => {
+      const CARACTERES_PAR_SECONDE = 1100;
+      const rapide = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (rapide || texte.length < 40) {
+        setMessages((prev) => {
+          const copy = [...prev];
+          copy[copy.length - 1] = { role: "assistant", content: texte };
+          return copy;
+        });
+        resolve();
+        return;
+      }
+
+      // Minuterie plutôt que `requestAnimationFrame` : celui-ci ne se
+      // déclenche pas tant que l'onglet ne compose pas d'image — onglet en
+      // arrière-plan, fenêtre réduite, aperçu intégré. La réponse restait
+      // alors figée jusqu'au retour du visiteur.
+      //
+      // L'avancement est calculé sur l'horloge, pas sur le nombre de tours :
+      // même si les tics sont ralentis, le texte reste à la bonne cadence et
+      // se termine toujours.
+      const debut = performance.now();
+      const etape = () => {
+        const n = Math.min(
+          texte.length,
+          Math.ceil(((performance.now() - debut) / 1000) * CARACTERES_PAR_SECONDE),
+        );
+        setMessages((prev) => {
+          const copy = [...prev];
+          copy[copy.length - 1] = { role: "assistant", content: texte.slice(0, n) };
+          return copy;
+        });
+        if (n < texte.length) animation.current = window.setTimeout(etape, 16);
+        else resolve();
+      };
+      animation.current = window.setTimeout(etape, 16);
+    });
+  }, []);
+
   const send = useCallback(
     async (raw: string, answer?: FieldAnswer) => {
       const text = raw.trim();
       if (!text || busy) return;
 
       abort.current?.abort();
+      if (animation.current) clearTimeout(animation.current);
       const controller = new AbortController();
       abort.current = controller;
 
@@ -169,6 +297,11 @@ export function Assistant() {
         const decoder = new TextDecoder();
         let buffer = "";
         let texteRecu = "";
+        // Conteneur plutôt que variable simple : l'affectation a lieu dans une
+        // fonction imbriquée, que l'analyse de flux de TypeScript ne suit pas.
+        const aSuivre: {
+          valeur: { navigate?: string | null; suggestions?: string[]; field?: Field | null; state?: ConvState } | null;
+        } = { valeur: null };
 
         const apply = (payload: {
           type: string;
@@ -180,27 +313,12 @@ export function Assistant() {
         }) => {
           if (payload.type === "text" && payload.v) {
             texteRecu += payload.v;
-            setMessages((prev) => {
-              const copy = [...prev];
-              copy[copy.length - 1] = { role: "assistant", content: texteRecu };
-              return copy;
-            });
           } else if (payload.type === "error" && payload.v) {
             texteRecu = payload.v;
-            setMessages((prev) => {
-              const copy = [...prev];
-              copy[copy.length - 1] = { role: "assistant", content: texteRecu };
-              return copy;
-            });
           } else if (payload.type === "actions") {
-            if (payload.state) setMemory(payload.state);
-            if (payload.field) setField(payload.field);
-            if (payload.suggestions?.length) setSuggestions(payload.suggestions);
-            if (payload.navigate && payload.navigate !== pathname) {
-              // Petit délai : le visiteur voit la réponse avant que la page change.
-              const target = payload.navigate;
-              setTimeout(() => router.push(target), 700);
-            }
+            // Mémorisées ici, appliquées après le déroulé du texte : les
+            // boutons ne doivent pas apparaître avant la fin de la phrase.
+            aSuivre.valeur = payload;
           }
         };
 
@@ -221,15 +339,25 @@ export function Assistant() {
           }
         }
 
-        if (!texteRecu) {
-          setMessages((prev) => {
-            const copy = [...prev];
-            copy[copy.length - 1] = {
-              role: "assistant",
-              content: "Je n'ai pas réussi à répondre. Réessayez, ou passez par le formulaire de contact.",
-            };
-            return copy;
-          });
+        // Le texte est reçu en entier : on le déroule maintenant, à cadence
+        // régulière, puis seulement on affiche boutons et formulaire.
+        await derouler(
+          texteRecu || "Je n'ai pas réussi à répondre. Réessayez, ou passez par le formulaire de contact.",
+        );
+
+        const suite = aSuivre.valeur;
+        if (suite) {
+          if (suite.state) setMemory(suite.state);
+          if (suite.field) setField(suite.field);
+          if (suite.suggestions?.length) setSuggestions(suite.suggestions);
+          // Le texte est complet et les boutons sont posés : on remonte au
+          // début de la réponse pour que rien ne soit passé sous le bord.
+          window.setTimeout(calerEnHaut, 40);
+          if (suite.navigate && suite.navigate !== pathname) {
+            // Un temps de lecture avant que la page change sous les yeux.
+            const cible = suite.navigate;
+            setTimeout(() => router.push(cible), 900);
+          }
         }
       } catch (err) {
         if ((err as Error)?.name === "AbortError") return;
@@ -246,11 +374,12 @@ export function Assistant() {
         if (!open) setUnread(true);
       }
     },
-    [busy, messages, memory, open, pathname, remember, router],
+    [busy, calerEnHaut, derouler, messages, memory, open, pathname, remember, router],
   );
 
   const reset = () => {
     abort.current?.abort();
+    if (animation.current) clearTimeout(animation.current);
     setMessages([]);
     setMemory({});
     setSuggestions(OPENERS);
@@ -312,9 +441,17 @@ export function Assistant() {
             </button>
           </header>
 
-          <div ref={scroller} className="flex-1 space-y-3 overflow-y-auto px-4 py-4" aria-live="polite">
+          <div
+            ref={scroller}
+            className="flex-1 space-y-3 overflow-y-auto px-4 py-4"
+            aria-live="polite"
+          >
             {shown.map((m, i) => (
-              <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
+              <div
+                key={i}
+                ref={i === shown.length - 1 ? derniereBulle : undefined}
+                className={`assistant-bulle ${m.role === "user" ? "flex justify-end" : "flex justify-start"}`}
+              >
                 <div
                   className={
                     m.role === "user"
@@ -337,6 +474,7 @@ export function Assistant() {
                 </div>
               </div>
             ))}
+            <div ref={espaceur} aria-hidden className="shrink-0" />
           </div>
 
           {/* Les suggestions libres sont masquées tant qu'un formulaire est
@@ -423,7 +561,7 @@ function InlineField({
           <button
             key={o.value}
             type="button"
-            onClick={() => onAnswer(o.label, { key: field.key, values: [o.value] })}
+            onClick={() => onAnswer(o.message ?? o.label, { key: field.key, values: [o.value] })}
             className="rounded-xl border border-white/12 bg-white/5 px-3 py-2 text-left text-[13px] text-white/80 transition hover:border-vanyo-500/50 hover:bg-vanyo-500/12 hover:text-white"
           >
             {o.label}

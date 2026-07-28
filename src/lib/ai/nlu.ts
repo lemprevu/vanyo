@@ -138,6 +138,25 @@ export type Intent =
   | "explique_page"
   | "oui"
   | "non"
+  | "menu"
+  | "propriete_code"
+  | "paiement_modalites"
+  | "acompte"
+  | "garantie"
+  | "rgpd"
+  | "securite"
+  | "contenu_textes"
+  | "photos"
+  | "logo"
+  | "multilingue"
+  | "reseaux_sociaux"
+  | "statistiques"
+  | "formation"
+  | "modifications_apres"
+  | "ecommerce"
+  | "accessibilite"
+  | "vitesse"
+  | "engagement_duree"
   | "hors_sujet"
   | "inconnu";
 
@@ -201,6 +220,7 @@ const RULES: Rule[] = [
       "sous combien de temps", "vous livrez quand", "c est rapide",
     ],
     weak: ["delai", "delais", "duree", "temps", "rapide", "urgent", "jours", "semaines", "livraison"],
+    unless: ["engage", "engagement", "resilier", "abonnement"],
   },
 
   {
@@ -300,6 +320,114 @@ const RULES: Rule[] = [
 
   { intent: "oui", strong: ["oui", "ouais", "yes", "carrement", "volontiers", "avec plaisir", "ok", "d accord", "exact", "tout a fait", "bien sur"] },
   { intent: "non", strong: ["non", "nan", "pas vraiment", "pas encore", "aucun", "aucune", "jamais", "pas du tout"] },
+
+  {
+    intent: "menu",
+    strong: [
+      "que sais tu faire", "tu sais faire quoi", "que peux tu faire", "vous pouvez m aider",
+      "aide moi", "je sais pas quoi demander", "montre moi ce que tu sais", "menu",
+      "quelles sont mes options", "tu peux faire quoi", "sur quoi je peux te poser des questions",
+    ],
+    weak: ["aide", "options", "possibilites"],
+  },
+
+  {
+    intent: "propriete_code",
+    strong: ["le site m appartient", "je suis proprietaire", "a qui appartient le site", "le code source", "si je pars", "recuperer mon site"],
+    weak: ["proprietaire", "propriete", "appartient", "code source", "sources"],
+  },
+
+  {
+    intent: "paiement_modalites",
+    strong: ["comment on paye", "moyens de paiement", "en plusieurs fois", "echelonner", "payer en plusieurs fois", "vous acceptez quoi comme paiement"],
+    weak: ["virement", "cheque", "carte bancaire", "echeance", "mensualites", "facture"],
+  },
+  {
+    intent: "acompte",
+    strong: ["un acompte", "verser un acompte", "payer d avance", "a la commande"],
+    weak: ["acompte", "avance", "arrhes"],
+  },
+
+  {
+    intent: "garantie",
+    strong: ["quelles garanties", "si ca marche pas", "si je suis pas content", "s il y a un bug", "vous garantissez quoi", "satisfait ou rembourse"],
+    weak: ["garantie", "garanties", "bug", "panne", "probleme apres"],
+  },
+
+  {
+    intent: "rgpd",
+    strong: ["le rgpd", "donnees personnelles", "les cookies", "conforme rgpd", "mentions legales"],
+    weak: ["rgpd", "cookies", "donnees", "confidentialite", "cnil"],
+  },
+  {
+    intent: "securite",
+    strong: ["est ce securise", "piratage", "se faire pirater", "la securite du site", "https"],
+    weak: ["securite", "securise", "pirate", "hack", "ssl", "certificat"],
+  },
+
+  {
+    intent: "contenu_textes",
+    strong: ["qui ecrit les textes", "vous redigez", "je dois fournir les textes", "j ai pas de texte", "rediger le contenu"],
+    weak: ["textes", "redaction", "rediger", "contenu", "ecrire"],
+  },
+  {
+    intent: "photos",
+    strong: ["j ai pas de photos", "les photos du site", "vous fournissez les photos", "banque d images", "shooting photo"],
+    weak: ["photo", "photos", "images", "visuels", "illustrations"],
+  },
+  {
+    intent: "logo",
+    strong: ["j ai pas de logo", "creer un logo", "faire mon logo", "une charte graphique", "identite visuelle"],
+    weak: ["logo", "charte", "identite", "graphique"],
+  },
+  {
+    intent: "multilingue",
+    strong: ["en plusieurs langues", "site en anglais", "version anglaise", "traduire le site", "site multilingue"],
+    weak: ["langue", "langues", "anglais", "traduction", "multilingue", "bilingue"],
+  },
+
+  {
+    intent: "reseaux_sociaux",
+    strong: ["les reseaux sociaux", "lier instagram", "connecter facebook", "mon compte instagram"],
+    weak: ["instagram", "facebook", "linkedin", "tiktok", "reseaux"],
+  },
+  {
+    intent: "statistiques",
+    strong: ["voir les visites", "combien de visiteurs", "les statistiques du site", "google analytics", "suivre le trafic"],
+    weak: ["statistiques", "visiteurs", "trafic", "analytics", "audience"],
+  },
+  {
+    intent: "formation",
+    strong: ["vous m expliquez comment", "une formation", "je saurai m en servir", "vous formez", "prise en main"],
+    weak: ["formation", "former", "apprendre", "tutoriel", "expliquer"],
+  },
+  {
+    intent: "modifications_apres",
+    strong: ["si je veux changer quelque chose", "modifier apres la livraison", "ajouter une page plus tard", "faire evoluer le site"],
+    weak: ["evoluer", "evolution", "changer", "ajouter plus tard", "apres livraison"],
+  },
+
+  {
+    intent: "ecommerce",
+    strong: ["vendre en ligne", "vendre mes produits", "une boutique en ligne", "gerer mes stocks", "les commandes", "livraison des commandes", "je peux vendre", "faire du e commerce"],
+    weak: ["boutique", "ecommerce", "produits", "stock", "commandes", "panier"],
+  },
+
+  {
+    intent: "accessibilite",
+    strong: ["accessible aux handicapes", "l accessibilite", "malvoyants", "rgaa", "wcag"],
+    weak: ["accessibilite", "accessible", "handicap"],
+  },
+  {
+    intent: "vitesse",
+    strong: ["le site sera rapide", "temps de chargement", "score lighthouse", "les performances du site"],
+    weak: ["vitesse", "rapidite", "performance", "performances", "lighthouse", "chargement"],
+  },
+  {
+    intent: "engagement_duree",
+    strong: ["engage combien de temps", "duree d engagement", "resilier", "arreter l abonnement", "sans engagement", "je suis engage", "combien de temps engage"],
+    weak: ["engagement", "resiliation", "resilier", "arreter", "annuler"],
+  },
 
   {
     intent: "hors_sujet",

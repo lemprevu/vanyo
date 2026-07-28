@@ -160,18 +160,13 @@ export async function POST(req: Request) {
   /* ── Diffusion progressive ─────────────────────────────────── */
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
-    async start(controller) {
+    start(controller) {
       const send = (o: unknown) => controller.enqueue(encoder.encode(sse(o)));
 
-      // Découpage en gardant les espaces, pour reconstituer le texte à
-      // l'identique côté navigateur.
-      const parts = reply.text.match(/\S+\s*/g) ?? [reply.text];
-      for (const part of parts) {
-        send({ type: "text", v: part });
-        // Un rythme de lecture crédible, sans traîner : ~28 ms par mot, un
-        // peu plus après une ponctuation forte.
-        await new Promise((r) => setTimeout(r, /[.!?…]\s*$/.test(part) ? 90 : 28));
-      }
+      // Le texte part d'un bloc : c'est le navigateur qui le déroule, calé
+      // sur son horloge d'affichage. Rythmer l'envoi ici produisait un texte
+      // saccadé, au gré de la latence réseau.
+      send({ type: "text", v: reply.text });
 
       send({
         type: "actions",

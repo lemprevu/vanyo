@@ -65,7 +65,19 @@ export const initialState = (): DialogueState => ({
 /*  Formulaire intégré au chat                                         */
 /* ------------------------------------------------------------------ */
 
-export type FieldOption = { label: string; value: string };
+export type FieldOption = {
+  /** Ce que le visiteur lit sur le bouton. */
+  label: string;
+  /** Ce qui est transmis au moteur. */
+  value: string;
+  /**
+   * Ce qui apparaît dans la conversation quand on clique, si c'est différent
+   * du libellé. Sert au sommaire, dont les entrées sont des rubriques
+   * (« Les prix ») alors que le fil doit lire comme une question posée
+   * (« Combien coûte un site ? »).
+   */
+  message?: string;
+};
 
 /**
  * Description du contrôle à afficher sous la question, dans la bulle.
@@ -611,6 +623,239 @@ function answerAideFormulaire(path: string | undefined): Omit<Reply, "state"> {
   };
 }
 
+/**
+ * Le sommaire de ce que l'assistant sait traiter.
+ *
+ * Beaucoup de visiteurs n'osent pas poser de question, ou ne savent pas ce
+ * qu'ils ont le droit de demander. Leur montrer l'étendue du sujet vaut mieux
+ * qu'une invite vide.
+ */
+function answerMenu(): Omit<Reply, "state"> {
+  return {
+    text: "Je peux répondre sur à peu près tout ce qui touche à votre projet. Choisissez un sujet, ou posez directement votre question.",
+    navigate: null,
+    suggestions: [],
+    field: {
+      kind: "choix",
+      key: "sujet",
+      options: [
+        { label: "Les prix et les formules", value: "Combien coûte un site ?", message: "Combien coûte un site ?" },
+        { label: "Les délais de livraison", value: "Quels sont vos délais ?", message: "Quels sont vos délais ?" },
+        { label: "Je veux lancer un projet", value: "Je veux un site", message: "Je veux un site" },
+        { label: "Voir vos réalisations", value: "Montrez-moi vos réalisations", message: "Montrez-moi vos réalisations" },
+        { label: "La maintenance et le suivi", value: "Vous faites de la maintenance ?", message: "Vous faites de la maintenance ?" },
+        { label: "Domaine, hébergement, emails", value: "Vous gérez le nom de domaine ?", message: "Vous gérez le nom de domaine ?" },
+        { label: "Le référencement Google", value: "Le SEO est-il inclus ?", message: "Le SEO est-il inclus ?" },
+        { label: "Textes et photos du site", value: "Qui rédige les textes ?", message: "Qui rédige les textes ?" },
+        { label: "Logo et charte graphique", value: "Vous créez le logo ?", message: "Vous créez le logo ?" },
+        { label: "Vendre en ligne", value: "Je veux vendre en ligne" },
+        { label: "Sécurité, RGPD, propriété", value: "Le site m'appartient-il ?", message: "Le site m'appartient-il ?" },
+        { label: "Comment se passe le paiement", value: "Comment se passe le paiement ?", message: "Comment se passe le paiement ?" },
+        { label: "Statistiques et trafic", value: "Je pourrai voir les visites ?", message: "Je pourrai voir les visites ?" },
+        { label: "Vous contacter", value: "Je veux vous contacter", message: "Je veux vous contacter" },
+      ],
+    },
+  };
+}
+
+function answerProprieteCode(): Omit<Reply, "state"> {
+  return {
+    text:
+      "Le site est à vous, entièrement, dès le paiement du solde : le code, les contenus, le nom de domaine. " +
+      "Rien n'est loué, rien n'est verrouillé. Si un jour vous voulez partir chez un autre prestataire, vous emportez tout — c'est la différence de fond avec un abonnement à une plateforme, où vous perdez le site en arrêtant de payer.",
+    navigate: null,
+    suggestions: ["Et la maintenance ?", "Vos tarifs", "Je veux un site"],
+  };
+}
+
+function answerPaiement(catalog: Catalog): Omit<Reply, "state"> {
+  const mini = Math.min(...catalog.packs.filter((p) => typeof p.base === "number").map((p) => p.base as number));
+  return {
+    text:
+      "Le règlement se fait par virement, en deux temps : un acompte de 30 % à la commande, le solde à la livraison, une fois que le site vous convient. " +
+      "Sur les projets plus conséquents, on peut échelonner davantage — c'est à voir ensemble. " +
+      `Une facture accompagne chaque versement. À partir de ${eur(mini)}, il n'y a rien d'autre à payer, sauf si vous prenez une maintenance mensuelle.`,
+    navigate: null,
+    suggestions: ["Et la maintenance ?", "Faire mon devis", "Vos tarifs"],
+  };
+}
+
+function answerGarantie(): Omit<Reply, "state"> {
+  return {
+    text:
+      "Vous validez la maquette avant qu'une ligne de code soit écrite, puis vous testez le site avant la mise en ligne : les mauvaises surprises sont éliminées en amont plutôt que réparées après. " +
+      "Un bug qui viendrait de notre travail est corrigé sans frais, maintenance ou pas. " +
+      "Ce qu'on ne garantit pas, en revanche, c'est une position précise sur Google : personne ne peut le promettre honnêtement.",
+    navigate: null,
+    suggestions: ["Comment ça se passe ?", "Vous contacter", "Je veux un site"],
+  };
+}
+
+function answerRgpd(): Omit<Reply, "state"> {
+  return {
+    text:
+      "Chaque site est livré conforme : mentions légales, politique de confidentialité, et bandeau cookies uniquement si le site en dépose réellement — inutile d'en afficher un pour rien. " +
+      "Les données de vos formulaires vous appartiennent et restent hébergées en Europe. Aucun traceur publicitaire n'est ajouté sans votre accord.",
+    navigate: null,
+    suggestions: ["Et la sécurité ?", "Vos tarifs", "Je veux un site"],
+  };
+}
+
+function answerSecurite(): Omit<Reply, "state"> {
+  return {
+    text:
+      "Le certificat HTTPS est installé et renouvelé automatiquement, et les formulaires sont protégés contre le spam. " +
+      "Le site est développé sur mesure, sans la couche d'extensions tierces qui est la première cause de piratage sur les sites classiques. " +
+      "Avec une maintenance, on ajoute les sauvegardes automatiques et la surveillance de disponibilité : c'est ce qui permet de restaurer en quelques minutes s'il arrive quoi que ce soit.",
+    navigate: null,
+    suggestions: ["Les formules de maintenance", "Et le RGPD ?", "Je veux un site"],
+  };
+}
+
+function answerContenuTextes(catalog: Catalog): Omit<Reply, "state"> {
+  const redaction = catalog.modules.find((m) => m.key === "redaction");
+  return {
+    text:
+      "Trois cas de figure : vous fournissez vos textes, vous en avez une partie qu'on retravaille, ou on écrit tout. " +
+      (redaction ? `La rédaction complète est une option à ${eur(redaction.price)} (jusqu'à 5 pages). ` : "") +
+      "Ne pas avoir de texte prêt n'est jamais un obstacle — c'est même le cas le plus fréquent. On part d'un échange sur votre activité et on rédige à partir de là.",
+    navigate: null,
+    suggestions: ["Et les photos ?", "Faire mon devis", "Vos tarifs"],
+  };
+}
+
+function answerPhotos(catalog: Catalog): Omit<Reply, "state"> {
+  const galerie = catalog.modules.find((m) => m.key === "galerie");
+  return {
+    text:
+      "Si vous avez des photos, on les optimise et on les intègre. Si vous n'en avez pas, on sélectionne des visuels libres de droits de qualité, sans supplément. " +
+      "Pour un restaurant, un salon ou un artisan, de vraies photos de votre travail font une vraie différence : ça vaut le coup d'en prévoir, même prises au téléphone si elles sont bien éclairées. " +
+      (galerie ? `La galerie photos est une option à ${eur(galerie.price)}, comprise dans plusieurs formules.` : ""),
+    navigate: null,
+    suggestions: ["Qui rédige les textes ?", "Vos réalisations", "Je veux un site"],
+  };
+}
+
+function answerLogo(catalog: Catalog): Omit<Reply, "state"> {
+  const logo = catalog.modules.find((m) => m.key === "logo");
+  const charte = catalog.modules.find((m) => m.key === "charte");
+  return {
+    text:
+      "Oui. " +
+      (logo ? `Création de logo : ${eur(logo.price)}, avec 3 pistes créatives et les fichiers vectoriels livrés. ` : "") +
+      (charte ? `Charte graphique complète (couleurs, typographies, déclinaisons) : ${eur(charte.price)}. ` : "") +
+      "Si vous avez déjà un logo, on construit le site autour, en respectant vos couleurs.",
+    navigate: null,
+    suggestions: ["Faire mon devis", "Vos réalisations", "Vos tarifs"],
+  };
+}
+
+function answerMultilingue(catalog: Catalog): Omit<Reply, "state"> {
+  const m = catalog.modules.find((x) => x.key === "multilingue");
+  return {
+    text:
+      `Oui, c'est prévu${m ? ` : ${eur(m.price)} pour une seconde langue complète` : ""}, avec bascule automatique selon la langue du visiteur et un référencement propre pour chaque version. ` +
+      "La traduction elle-même peut être la vôtre, ou on s'en charge — à préciser dans le devis.",
+    navigate: null,
+    suggestions: ["Faire mon devis", "Le référencement", "Vos tarifs"],
+  };
+}
+
+function answerReseaux(): Omit<Reply, "state"> {
+  return {
+    text:
+      "Oui : liens vers vos comptes, et affichage de votre fil Instagram directement sur le site si vous le souhaitez. " +
+      "Un conseil au passage : les réseaux sociaux ne vous appartiennent pas, votre site si. Ils servent à amener du monde chez vous, pas l'inverse.",
+    navigate: null,
+    suggestions: ["Le référencement", "Je veux un site", "Vos tarifs"],
+  };
+}
+
+function answerStatistiques(catalog: Catalog): Omit<Reply, "state"> {
+  const a = catalog.modules.find((m) => m.key === "analytics");
+  const d = catalog.modules.find((m) => m.key === "dashboard");
+  return {
+    text:
+      `Oui${a ? ` — la mise en place d'Analytics et de la Search Console est à ${eur(a.price)}` : ""} : nombre de visiteurs, pages les plus vues, provenance du trafic, mots-clés qui vous amènent du monde. ` +
+      (d ? `Un tableau de bord intégré au site, plus lisible, existe aussi (${eur(d.price)}). ` : "") +
+      "Les formules de maintenance incluent un rapport mensuel, pour ne pas avoir à aller le chercher.",
+    navigate: null,
+    suggestions: ["Les formules de maintenance", "Le référencement", "Vos tarifs"],
+  };
+}
+
+function answerFormation(): Omit<Reply, "state"> {
+  return {
+    text:
+      "Oui, systématiquement. À la livraison, on vous fait une prise en main du panel d'administration : en général quinze à trente minutes suffisent, c'est fait pour être simple. " +
+      "Vous repartez aussi avec un mode d'emploi écrit, et vous pouvez revenir poser des questions ensuite.",
+    navigate: null,
+    suggestions: ["Je pourrai tout modifier ?", "Comment ça se passe ?", "Je veux un site"],
+  };
+}
+
+function answerModificationsApres(catalog: Catalog): Omit<Reply, "state"> {
+  const plan = catalog.maintenancePlans.find((p) => p.recommended);
+  return {
+    text:
+      `Le site est fait pour évoluer : ajouter une page coûte ${eur(catalog.extraPagePrice)}, une nouvelle fonctionnalité se chiffre à la demande. ` +
+      "Tout ce qui est texte, photo ou article, vous le changez vous-même depuis votre panel, autant de fois que vous voulez et sans rien payer. " +
+      (plan ? `Et si vous préférez ne pas y toucher, la formule ${plan.label} (${eur(plan.price)}/mois) comprend des modifications faites par nos soins.` : ""),
+    navigate: null,
+    suggestions: ["Les formules de maintenance", "Vos tarifs", "Je veux un site"],
+  };
+}
+
+function answerEcommerce(catalog: Catalog): Omit<Reply, "state"> {
+  const b = catalog.modules.find((m) => m.key === "boutique");
+  const pay = catalog.modules.find((m) => m.key === "paiement");
+  return {
+    text:
+      `Oui : catalogue, panier, commandes et gestion des stocks${b ? ` (${eur(b.price)})` : ""}, avec encaissement sécurisé par carte via Stripe${pay ? ` (${eur(pay.price)})` : ""}. ` +
+      "Vous gérez vos produits, vos prix et vos stocks depuis votre panel, et vous recevez chaque commande par email. " +
+      "Les frais de port et les moyens de livraison se paramètrent selon votre activité. Dites-moi ce que vous vendez, je vous oriente.",
+    navigate: null,
+    suggestions: ["Je veux vendre en ligne", "Combien ça coûte ?", "Vos réalisations"],
+  };
+}
+
+function answerAccessibilite(): Omit<Reply, "state"> {
+  return {
+    text:
+      "Les bases sont intégrées d'office : contrastes suffisants, navigation au clavier, textes alternatifs sur les images, structure de titres correcte. " +
+      "C'est utile bien au-delà du handicap : c'est exactement ce que Google analyse aussi. " +
+      "Une mise en conformité RGAA complète, telle qu'exigée du secteur public, est un travail à part — on peut en parler si vous y êtes soumis.",
+    navigate: null,
+    suggestions: ["Le référencement", "Vous contacter", "Vos tarifs"],
+  };
+}
+
+function answerVitesse(catalog: Catalog): Omit<Reply, "state"> {
+  const perf = catalog.modules.find((m) => m.key === "perf");
+  return {
+    text:
+      "C'est un point sur lequel on ne transige pas : images compressées aux formats modernes, code minimal, hébergement rapide, aucune bibliothèque superflue. " +
+      "Un site lent fait fuir les visiteurs et se fait pénaliser par Google — les deux à la fois. " +
+      (perf ? `Une optimisation poussée visant 95+ sur Lighthouse est disponible en option (${eur(perf.price)}).` : ""),
+    navigate: null,
+    suggestions: ["Le référencement", "Vos réalisations", "Je veux un site"],
+  };
+}
+
+function answerEngagement(catalog: Catalog): Omit<Reply, "state"> {
+  const payantes = catalog.maintenancePlans.filter((p) => p.price > 0);
+  return {
+    text:
+      "Aucun engagement de durée. La création se paie une fois, point. " +
+      (payantes.length
+        ? `La maintenance est un abonnement mensuel (${enumerate(payantes.map((p) => `${p.label} ${eur(p.price)}/mois`))}) que vous pouvez arrêter quand vous voulez, d'un simple email. `
+        : "") +
+      "Le site reste le vôtre dans tous les cas : arrêter la maintenance ne le coupe pas, il continue de fonctionner.",
+    navigate: null,
+    suggestions: ["Les formules de maintenance", "Le site m'appartient ?", "Vos tarifs"],
+  };
+}
+
 function answerExpliquePage(path: string | undefined): Omit<Reply, "state"> {
   const page = PAGES.find((p) => p.url === path) ?? PAGES.find((p) => path?.startsWith(p.url + "/"));
   if (!page) {
@@ -879,6 +1124,43 @@ function answerByIntent(
       return answerIdentite();
     case "aide_formulaire":
       return answerAideFormulaire(path);
+    case "menu":
+      return answerMenu();
+    case "propriete_code":
+      return answerProprieteCode();
+    case "paiement_modalites":
+    case "acompte":
+      return answerPaiement(catalog);
+    case "garantie":
+      return answerGarantie();
+    case "rgpd":
+      return answerRgpd();
+    case "securite":
+      return answerSecurite();
+    case "contenu_textes":
+      return answerContenuTextes(catalog);
+    case "photos":
+      return answerPhotos(catalog);
+    case "logo":
+      return answerLogo(catalog);
+    case "multilingue":
+      return answerMultilingue(catalog);
+    case "reseaux_sociaux":
+      return answerReseaux();
+    case "statistiques":
+      return answerStatistiques(catalog);
+    case "formation":
+      return answerFormation();
+    case "modifications_apres":
+      return answerModificationsApres(catalog);
+    case "ecommerce":
+      return answerEcommerce(catalog);
+    case "accessibilite":
+      return answerAccessibilite();
+    case "vitesse":
+      return answerVitesse(catalog);
+    case "engagement_duree":
+      return answerEngagement(catalog);
     default:
       return null;
   }
